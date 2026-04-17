@@ -4,9 +4,10 @@ import { ChevronLeft, Send, User, Bot } from 'lucide-react';
 
 interface ChatPageProps {
   onBack: () => void;
+  onNewMessage: () => void;
 }
 
-export default function ChatPage({ onBack }: ChatPageProps) {
+export default function ChatPage({ onBack, onNewMessage }: ChatPageProps) {
   const [messages, setMessages] = useState([
     { id: 1, text: "Bonjour ! Bienvenue sur l'assistance FILANT225.", sender: 'bot', time: '14:00' },
     { id: 2, text: "Comment puis-je vous aider aujourd'hui ?", sender: 'bot', time: '14:00' },
@@ -27,7 +28,8 @@ export default function ChatPage({ onBack }: ChatPageProps) {
         sender: 'bot', 
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
       }]);
-    }, 1000);
+      onNewMessage();
+    }, 1500);
   };
 
   return (

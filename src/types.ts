@@ -1,5 +1,14 @@
 export type ProfileType = 'client' | 'travailleur' | 'proprietaire' | 'agence' | 'entreprise';
 
+export interface Notification {
+  id: number;
+  title: string;
+  message: string;
+  time: string;
+  read: boolean;
+  type: 'info' | 'alert' | 'success';
+}
+
 export interface UserData {
   profileType: ProfileType;
   details: Record<string, string>;

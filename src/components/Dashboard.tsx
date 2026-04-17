@@ -8,9 +8,10 @@ import { View } from '../App';
 interface DashboardProps {
   userData: UserData;
   onNavigate: (view: View) => void;
+  unreadCount: number;
 }
 
-export default function Dashboard({ userData, onNavigate }: DashboardProps) {
+export default function Dashboard({ userData, onNavigate, unreadCount }: DashboardProps) {
   const [showQR, setShowQR] = useState(false);
   
   const today = new Date();
@@ -50,9 +51,11 @@ export default function Dashboard({ userData, onNavigate }: DashboardProps) {
              className="relative cursor-pointer active:scale-110 transition-transform"
            >
               <Bell className="w-10 h-10 fill-black" />
-              <div className="absolute top-0 right-0 bg-white text-brand-orange text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border border-black shadow-sm">
-                1
-              </div>
+              {unreadCount > 0 && (
+                <div className="absolute top-0 right-0 bg-white text-brand-orange text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border border-black shadow-sm">
+                  {unreadCount}
+                </div>
+              )}
            </button>
         </div>
 
