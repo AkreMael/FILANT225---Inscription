@@ -84,15 +84,23 @@ export default function Dashboard({ userData, onNavigate, unreadCount }: Dashboa
       {/* Grid Content */}
       <div className="brand-gradient p-6 space-y-6 flex-1 min-h-[60vh]">
          <div className="grid grid-cols-2 gap-4">
-            <motion.div 
+            <motion.button 
                whileTap={{ scale: 0.95 }}
-               className="bg-[#EEEEEE] rounded-3xl p-6 flex flex-col items-center justify-center aspect-square shadow-inner cursor-pointer"
+               onClick={() => onNavigate('missions')}
+               className="bg-[#EEEEEE] rounded-3xl p-6 flex flex-col items-center justify-center aspect-square shadow-inner cursor-pointer text-left border-2 border-transparent hover:border-brand-orange/30 transition-all"
             >
                <div className="flex flex-col items-center gap-2 text-xl font-bold text-black">
-                  <span className="text-4xl">📝</span>
+                  <div className="relative">
+                    <span className="text-4xl">📝</span>
+                    {userData.missions.length > 0 && (
+                      <div className="absolute -top-2 -right-2 bg-brand-red text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border border-white">
+                        {userData.missions.length}
+                      </div>
+                    )}
+                  </div>
                   <span className="text-lg">Mes missions</span>
                </div>
-            </motion.div>
+            </motion.button>
 
             <motion.div 
                whileTap={{ scale: 0.95 }}

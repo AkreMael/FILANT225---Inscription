@@ -5,10 +5,11 @@ import ProfilePanel from './components/ProfilePanel';
 import NotificationsPage from './components/NotificationsPage';
 import ChatPage from './components/ChatPage';
 import PaymentPage from './components/PaymentPage';
-import { UserData, Notification } from './types';
+import MissionsPage from './components/MissionsPage';
+import { UserData, Notification, Mission } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 
-export type View = 'registration' | 'dashboard' | 'profile' | 'notifications' | 'chat' | 'payment';
+export type View = 'registration' | 'dashboard' | 'profile' | 'notifications' | 'chat' | 'payment' | 'missions';
 
 export default function App() {
   const [userData, setUserData] = useState<UserData | null>(() => {
@@ -49,12 +50,31 @@ export default function App() {
     setNotifications(prev => [newNotif, ...prev]);
   };
 
+  const addMission = (title: string) => {
+    if (!userData) return;
+    const newMission: Mission = {
+      id: Date.now(),
+      title,
+      date: new Date().toLocaleDateString('fr-FR'),
+      status: 'en cours'
+    };
+    setUserData(prev => prev ? { ...prev, missions: [newMission, ...prev.missions] } : null);
+    addNotification('Nouvelle mission', `La mission "${title}" a été ajoutée à votre historique.`, 'info');
+  };
+
   const markNotificationsAsRead = () => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
   const handleRegistrationComplete = (data: { profileType: any; details: Record<string, string> }) => {
-    const newUser: UserData = { ...data, isActivated: false };
+    const newUser: UserData = { 
+      ...data, 
+      isActivated: false, 
+      missions: [
+        { id: 1, title: 'Livraison express Abidjan', date: '15/04/2026', status: 'terminée' },
+        { id: 2, title: 'Maintenance équipement', date: '16/04/2026', status: 'terminée' }
+      ] 
+    };
     setUserData(newUser);
     addNotification('Bienvenue', 'Votre inscription a été validée avec succès.', 'success');
     setActiveView('dashboard');
@@ -71,6 +91,7 @@ export default function App() {
     if (userData) {
       setUserData({ ...userData, isActivated: true });
       addNotification('Paiement réussi', 'Votre mise en relation est désormais active !', 'success');
+      addMission('Première mission activée');
       setActiveView('dashboard');
     }
   };
@@ -123,6 +144,15 @@ export default function App() {
                 <ChatPage 
                   onBack={() => setActiveView('dashboard')} 
                   onNewMessage={() => addNotification('Nouveau message', 'Vous avez reçu un message de l\'assistance.', 'info')}
+                />
+              </motion.div>
+            )}
+
+            {activeView === 'missions' && (
+              <motion.div key="missions" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                <MissionsPage 
+                  missions={userData.missions}
+                  onBack={() => setActiveView('dashboard')}
                 />
               </motion.div>
             )}
