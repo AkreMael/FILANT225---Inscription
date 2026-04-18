@@ -5,9 +5,10 @@ import { ChevronLeft, ShieldCheck, CreditCard, Landmark, Smartphone, ArrowRight,
 interface PaymentPageProps {
   onBack: () => void;
   onSuccess: () => void;
+  theme: 'light' | 'dark';
 }
 
-export default function PaymentPage({ onBack, onSuccess }: PaymentPageProps) {
+export default function PaymentPage({ onBack, onSuccess, theme }: PaymentPageProps) {
   const [loading, setLoading] = useState(false);
 
   const handleConfirm = () => {
@@ -24,18 +25,18 @@ export default function PaymentPage({ onBack, onSuccess }: PaymentPageProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      <div className="bg-brand-orange p-6 flex items-center gap-4 text-black">
-        <button onClick={onBack} className="p-2 bg-white/20 rounded-full cursor-pointer">
+    <div className={`fixed inset-0 ${theme === 'dark' ? 'bg-gray-950' : 'bg-white'} z-50 flex flex-col transition-colors duration-300`}>
+      <div className="bg-brand-orange p-6 flex items-center gap-4 text-black shadow-md shrink-0">
+        <button onClick={onBack} className="p-2 bg-white/20 rounded-full cursor-pointer active:scale-95 transition-transform">
            <ChevronLeft className="w-6 h-6" />
         </button>
         <h1 className="text-xl font-bold uppercase tracking-tight">Paiement Sécurisé</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-8">
-        <div className="bg-orange-50 p-6 rounded-[2rem] border-2 border-brand-orange/20 text-center">
+        <div className="bg-orange-50 dark:bg-orange-950/20 p-6 rounded-[2rem] border-2 border-brand-orange/20 text-center transition-colors">
            <p className="text-xs font-bold text-brand-orange uppercase tracking-widest mb-1">Total à payer</p>
-           <h2 className="text-5xl font-black text-gray-900 font-display">7 100 <span className="text-xl">FCFA</span></h2>
+           <h2 className="text-5xl font-black text-gray-900 dark:text-white font-display">7 100 <span className="text-xl">FCFA</span></h2>
            <div className="flex items-center justify-center gap-2 text-green-600 mt-4 text-xs font-bold">
               <ShieldCheck className="w-4 h-4" />
               Paiement 100% sécurisé
@@ -57,7 +58,7 @@ export default function PaymentPage({ onBack, onSuccess }: PaymentPageProps) {
                  <div className="ml-auto w-5 h-5 rounded-full border-4 border-brand-orange" />
               </button>
 
-              <button className="w-full flex items-center gap-4 p-5 bg-gray-50 border-2 border-transparent rounded-2xl opacity-50 grayscale">
+              <button className="w-full flex items-center gap-4 p-5 bg-gray-50 border-2 border-transparent rounded-2xl opacity-50 grayscale cursor-not-allowed">
                  <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-gray-400">
                     <CreditCard className="w-6 h-6" />
                  </div>
@@ -73,7 +74,7 @@ export default function PaymentPage({ onBack, onSuccess }: PaymentPageProps) {
            <button 
               disabled={loading}
               onClick={handleConfirm}
-              className="w-full bg-brand-red text-white py-5 rounded-2xl font-display text-xl font-black flex items-center justify-center gap-3 shadow-lg shadow-red-200 active:scale-95 transition-all disabled:opacity-70"
+              className="w-full bg-brand-red text-white py-5 rounded-2xl font-display text-xl font-black flex items-center justify-center gap-3 shadow-lg shadow-red-200 dark:shadow-red-900/20 active:scale-95 transition-all disabled:opacity-70"
            >
               {loading ? (
                 <>

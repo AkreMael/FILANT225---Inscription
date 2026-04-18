@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import RegistrationPage from './components/RegistrationPage';
 import Dashboard from './components/Dashboard';
 import ProfilePanel from './components/ProfilePanel';
@@ -12,6 +12,11 @@ import { motion, AnimatePresence } from 'motion/react';
 export type View = 'registration' | 'dashboard' | 'profile' | 'notifications' | 'chat' | 'payment' | 'missions';
 
 export default function App() {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('filant225_theme');
+    return (saved as 'light' | 'dark') || 'light';
+  });
+
   const [userData, setUserData] = useState<UserData | null>(() => {
     const saved = localStorage.getItem('filant225_user');
     return saved ? JSON.parse(saved) : null;
@@ -27,18 +32,22 @@ export default function App() {
   });
 
   useEffect(() => {
+    localStorage.setItem('filant225_theme', theme);
+  }, [theme]);
+
+  useEffect(() => {
     if (userData) {
-      localStorage.setItem('filant225_user', JSON.stringify(userData));
+      localStorage.setItem('filant225_user', JSON.stringify({ ...userData, theme }));
     } else {
       localStorage.removeItem('filant225_user');
     }
-  }, [userData]);
+  }, [userData, theme]);
 
   useEffect(() => {
     localStorage.setItem('filant225_notifications', JSON.stringify(notifications));
   }, [notifications]);
 
-  const addNotification = (title: string, message: string, type: Notification['type'] = 'info') => {
+  const addNotification = useCallback((title: string, message: string, type: Notification['type'] = 'info') => {
     const newNotif: Notification = {
       id: Date.now(),
       title,
@@ -48,123 +57,157 @@ export default function App() {
       type
     };
     setNotifications(prev => [newNotif, ...prev]);
-  };
+  }, []);
 
-  const addMission = (title: string) => {
-    if (!userData) return;
-    const newMission: Mission = {
-      id: Date.now(),
-      title,
-      date: new Date().toLocaleDateString('fr-FR'),
-      status: 'en cours'
-    };
-    setUserData(prev => prev ? { ...prev, missions: [newMission, ...prev.missions] } : null);
+  const addMission = useCallback((title: string) => {
+    setUserData(prev => {
+      if (!prev) return null;
+      const newMission: Mission = {
+        id: Date.now(),
+        title,
+        date: new Date().toLocaleDateString('fr-FR'),
+        status: 'en cours'
+      };
+      return { ...prev, missions: [newMission, ...prev.missions] };
+    });
     addNotification('Nouvelle mission', `La mission "${title}" a été ajoutée à votre historique.`, 'info');
-  };
+  }, [addNotification]);
 
-  const markNotificationsAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  };
+  const markNotificationsAsRead = useCallback(() => {
+    setNotifications(prev => {
+      const hasUnread = prev.some(n => !n.read);
+      if (!hasUnread) return prev; // Avoid unnecessary re-render if nothing changes
+      return prev.map(n => ({ ...n, read: true }));
+    });
+  }, []);
 
-  const handleRegistrationComplete = (data: { profileType: any; details: Record<string, string> }) => {
+  const handleUpdateUser = useCallback((updates: Partial<UserData>) => {
+    if (updates.theme) setTheme(updates.theme as 'light' | 'dark');
+    setUserData(prev => prev ? { ...prev, ...updates } : null);
+  }, []);
+
+  const handleRegistrationComplete = useCallback((data: { profileType: any; details: Record<string, string> }) => {
     const newUser: UserData = { 
       ...data, 
       isActivated: false, 
       missions: [
         { id: 1, title: 'Livraison express Abidjan', date: '15/04/2026', status: 'terminée' },
         { id: 2, title: 'Maintenance équipement', date: '16/04/2026', status: 'terminée' }
-      ] 
+      ],
+      isAvailable: true,
+      theme
     };
     setUserData(newUser);
     addNotification('Bienvenue', 'Votre inscription a été validée avec succès.', 'success');
     setActiveView('dashboard');
-  };
+  }, [addNotification, theme]);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     setUserData(null);
     setNotifications([]);
-    localStorage.clear();
+    localStorage.removeItem('filant225_user');
+    localStorage.removeItem('filant225_notifications');
     setActiveView('registration');
-  };
+  }, []);
 
-  const handlePaymentSuccess = () => {
-    if (userData) {
-      setUserData({ ...userData, isActivated: true });
-      addNotification('Paiement réussi', 'Votre mise en relation est désormais active !', 'success');
-      addMission('Première mission activée');
-      setActiveView('dashboard');
-    }
-  };
+  const handlePaymentSuccess = useCallback(() => {
+    setUserData(prev => {
+      if (!prev) return null;
+      return { ...prev, isActivated: true };
+    });
+    addNotification('Paiement réussi', 'Votre mise en relation est désormais active !', 'success');
+    addMission('Première mission activée');
+    setActiveView('dashboard');
+  }, [addNotification, addMission]);
+
+  const navigateToDashboard = useCallback(() => setActiveView('dashboard'), []);
+  const navigateToNotifications = useCallback(() => setActiveView('notifications'), []);
+  const navigateToChat = useCallback(() => setActiveView('chat'), []);
+  const navigateToMissions = useCallback(() => setActiveView('missions'), []);
+  const navigateToPayment = useCallback(() => setActiveView('payment'), []);
+
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const openProfile = useCallback(() => setIsProfileOpen(true), []);
+  const closeProfile = useCallback(() => setIsProfileOpen(false), []);
+
+  const handleNewChatMessage = useCallback(() => {
+    addNotification('Nouveau message', 'Vous avez reçu un message de l\'assistance.', 'info');
+  }, [addNotification]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden">
+    <div className={`min-h-screen overflow-x-hidden transition-colors duration-300 ${theme === 'dark' ? 'dark bg-gray-950' : 'bg-white'}`}>
       <AnimatePresence mode="wait">
         {activeView === 'registration' && (
           <motion.div key="registration" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-             <RegistrationPage onComplete={handleRegistrationComplete} />
+             <RegistrationPage onComplete={handleRegistrationComplete} theme={theme} />
           </motion.div>
         )}
         
         {userData && (
           <>
-            {activeView === 'dashboard' && (
-              <motion.div key="dashboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div 
+              key={activeView} 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              className="min-h-screen"
+            >
+              {activeView === 'dashboard' && (
                 <Dashboard 
                   userData={userData} 
-                  onNavigate={setActiveView} 
+                  onNavigate={(view) => view === 'profile' ? openProfile() : setActiveView(view)} 
                   unreadCount={unreadCount}
+                  onUpdateUser={handleUpdateUser}
+                  theme={theme}
                 />
-              </motion.div>
-            )}
+              )}
 
-            {activeView === 'profile' && (
-              <motion.div key="profile" initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25 }}>
-                <ProfilePanel 
-                  userData={userData} 
-                  onBack={() => setActiveView('dashboard')} 
-                  onLogout={handleLogout}
-                />
-              </motion.div>
-            )}
-
-            {activeView === 'notifications' && (
-              <motion.div key="notifications" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              {activeView === 'notifications' && (
                 <NotificationsPage 
                   notifications={notifications}
-                  onBack={() => setActiveView('dashboard')} 
+                  onBack={navigateToDashboard} 
                   onMarkAsRead={markNotificationsAsRead}
+                  theme={theme}
                 />
-              </motion.div>
-            )}
+              )}
 
-            {activeView === 'chat' && (
-              <motion.div key="chat" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              {activeView === 'chat' && (
                 <ChatPage 
-                  onBack={() => setActiveView('dashboard')} 
-                  onNewMessage={() => addNotification('Nouveau message', 'Vous avez reçu un message de l\'assistance.', 'info')}
+                  onBack={navigateToDashboard} 
+                  onNewMessage={handleNewChatMessage}
+                  theme={theme}
                 />
-              </motion.div>
-            )}
+              )}
 
-            {activeView === 'missions' && (
-              <motion.div key="missions" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              {activeView === 'missions' && (
                 <MissionsPage 
                   missions={userData.missions}
-                  onBack={() => setActiveView('dashboard')}
+                  onBack={navigateToDashboard}
+                  theme={theme}
                 />
-              </motion.div>
-            )}
+              )}
 
-            {activeView === 'payment' && (
-              <motion.div key="payment" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
+              {activeView === 'payment' && (
                 <PaymentPage 
-                  onBack={() => setActiveView('dashboard')} 
+                  onBack={navigateToDashboard} 
                   onSuccess={handlePaymentSuccess}
+                  theme={theme}
                 />
-              </motion.div>
-            )}
+              )}
+            </motion.div>
+
+            <AnimatePresence>
+              {isProfileOpen && (
+                <ProfilePanel 
+                  userData={userData} 
+                  onBack={closeProfile} 
+                  onLogout={() => { handleLogout(); closeProfile(); }}
+                  onUpdateUser={handleUpdateUser}
+                />
+              )}
+            </AnimatePresence>
           </>
         )}
       </AnimatePresence>

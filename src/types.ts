@@ -21,6 +21,12 @@ export interface UserData {
   details: Record<string, string>;
   isActivated: boolean;
   missions: Mission[];
+  isAvailable: boolean;
+  idDocuments?: {
+    recto?: string;
+    verso?: string;
+  };
+  theme: 'light' | 'dark';
 }
 
 export const PROFILE_LABELS: Record<ProfileType, string> = {

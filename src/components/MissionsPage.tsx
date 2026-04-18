@@ -1,10 +1,11 @@
 import { motion } from 'motion/react';
-import { ChevronLeft, ClipboardList, CheckCircle2, Clock, XCircle, MoreVertical } from 'lucide-react';
+import { ChevronLeft, ClipboardCheck, CheckCircle2, Clock, XCircle, MoreVertical } from 'lucide-react';
 import { Mission } from '../types';
 
 interface MissionsPageProps {
   missions: Mission[];
   onBack: () => void;
+  theme: 'light' | 'dark';
 }
 
 const STATUS_ICONS = {
@@ -19,14 +20,14 @@ const STATUS_COLORS = {
   'annulée': 'bg-red-50 text-red-700 border-red-100',
 };
 
-export default function MissionsPage({ missions, onBack }: MissionsPageProps) {
+export default function MissionsPage({ missions, onBack, theme }: MissionsPageProps) {
   const completedMissions = missions.filter(m => m.status === 'terminée').length;
 
   return (
-    <div className="fixed inset-0 bg-white z-50 flex flex-col overflow-hidden">
+    <div className={`fixed inset-0 ${theme === 'dark' ? 'bg-gray-950 text-white' : 'bg-white'} z-50 flex flex-col overflow-hidden transition-colors duration-300`}>
       {/* Header */}
-      <div className="bg-brand-orange p-6 flex items-center gap-4 text-black shadow-lg z-10">
-        <button onClick={onBack} className="p-2 bg-white/20 rounded-full cursor-pointer hover:bg-white/30 transition-colors">
+      <div className="bg-brand-orange p-6 flex items-center gap-4 text-black shadow-lg z-10 shrink-0">
+        <button onClick={onBack} className="p-2 bg-white/20 rounded-full cursor-pointer hover:bg-white/30 transition-colors active:scale-95">
           <ChevronLeft className="w-6 h-6" />
         </button>
         <div>
@@ -38,10 +39,10 @@ export default function MissionsPage({ missions, onBack }: MissionsPageProps) {
       </div>
 
       {/* Counter Banner */}
-      <div className="bg-[#442200] p-4 flex justify-between items-center text-white border-b border-white/10">
+      <div className="bg-[#442200] p-4 flex justify-between items-center text-white border-b border-white/10 shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-brand-orange rounded-xl flex items-center justify-center">
-            <ClipboardList className="w-6 h-6 text-black" />
+            <ClipboardCheck className="w-6 h-6 text-black" />
           </div>
           <span className="text-xs font-bold uppercase tracking-wider">Total des missions</span>
         </div>
@@ -51,7 +52,7 @@ export default function MissionsPage({ missions, onBack }: MissionsPageProps) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 bg-gray-50 space-y-4 pb-24">
+      <div className={`flex-1 overflow-y-auto p-6 space-y-4 pb-24 ${theme === 'dark' ? 'bg-gray-950' : 'bg-gray-50'}`}>
         {missions.length > 0 ? (
           missions.map((mission, index) => (
             <motion.div
@@ -87,7 +88,7 @@ export default function MissionsPage({ missions, onBack }: MissionsPageProps) {
           ))
         ) : (
           <div className="flex flex-col items-center justify-center py-20 opacity-30">
-            <ClipboardList className="w-20 h-20 mb-4" />
+            <ClipboardCheck className="w-20 h-20 mb-4" />
             <p className="font-bold uppercase tracking-widest">Aucune mission pour le moment</p>
           </div>
         )}

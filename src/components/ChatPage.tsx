@@ -5,9 +5,10 @@ import { ChevronLeft, Send, User, Bot } from 'lucide-react';
 interface ChatPageProps {
   onBack: () => void;
   onNewMessage: () => void;
+  theme: 'light' | 'dark';
 }
 
-export default function ChatPage({ onBack, onNewMessage }: ChatPageProps) {
+export default function ChatPage({ onBack, onNewMessage, theme }: ChatPageProps) {
   const [messages, setMessages] = useState([
     { id: 1, text: "Bonjour ! Bienvenue sur l'assistance FILANT225.", sender: 'bot', time: '14:00' },
     { id: 2, text: "Comment puis-je vous aider aujourd'hui ?", sender: 'bot', time: '14:00' },
@@ -33,9 +34,9 @@ export default function ChatPage({ onBack, onNewMessage }: ChatPageProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      <div className="bg-brand-orange p-6 flex items-center gap-4 text-black">
-        <button onClick={onBack} className="p-2 bg-white/20 rounded-full">
+    <div className={`fixed inset-0 ${theme === 'dark' ? 'bg-gray-950' : 'bg-white'} z-50 flex flex-col transition-colors duration-300`}>
+      <div className="bg-brand-orange p-6 flex items-center gap-4 text-black shrink-0 shadow-md">
+        <button onClick={onBack} className="p-2 bg-white/20 rounded-full active:scale-95 transition-transform">
            <ChevronLeft className="w-6 h-6" />
         </button>
         <div className="flex items-center gap-3">
@@ -49,7 +50,7 @@ export default function ChatPage({ onBack, onNewMessage }: ChatPageProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+      <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${theme === 'dark' ? 'bg-gray-950' : 'bg-gray-50'}`}>
         {messages.map((msg) => (
           <motion.div 
             key={msg.id}
@@ -60,7 +61,7 @@ export default function ChatPage({ onBack, onNewMessage }: ChatPageProps) {
             <div className={`max-w-[80%] p-4 rounded-2xl shadow-sm ${
               msg.sender === 'user' 
                 ? 'bg-brand-orange text-white rounded-tr-none' 
-                : 'bg-white text-gray-800 rounded-tl-none'
+                : 'bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 rounded-tl-none'
             }`}>
               <p className="text-sm font-medium">{msg.text}</p>
               <span className={`text-[9px] mt-1 block font-bold ${msg.sender === 'user' ? 'text-white/60' : 'text-gray-400'}`}>
@@ -71,14 +72,14 @@ export default function ChatPage({ onBack, onNewMessage }: ChatPageProps) {
         ))}
       </div>
 
-      <div className="p-4 bg-white border-t border-gray-100 flex gap-2">
+      <div className="p-4 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex gap-2">
          <input 
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Écrivez votre message..."
-            className="flex-1 bg-gray-50 border-2 border-transparent focus:border-brand-orange rounded-xl px-4 py-3 outline-none text-sm transition-all"
+            className="flex-1 bg-gray-50 dark:bg-gray-800 border-2 border-transparent focus:border-brand-orange rounded-xl px-4 py-3 outline-none text-sm transition-all text-gray-900 dark:text-white"
          />
          <button 
             onClick={handleSend}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Bell, MapPin, Info, QrCode, MessageSquare, X, Smartphone, CheckCircle2 } from 'lucide-react';
+import { User, Bell, MapPin, Info, QrCode, MessageSquare, X, Smartphone, CheckCircle2, Moon, Sun, ClipboardCheck } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { UserData, PROFILE_LABELS } from '../types';
 import { View } from '../App';
@@ -9,10 +9,16 @@ interface DashboardProps {
   userData: UserData;
   onNavigate: (view: View) => void;
   unreadCount: number;
+  onUpdateUser: (updates: Partial<UserData>) => void;
+  theme: 'light' | 'dark';
 }
 
-export default function Dashboard({ userData, onNavigate, unreadCount }: DashboardProps) {
+export default function Dashboard({ userData, onNavigate, unreadCount, onUpdateUser, theme }: DashboardProps) {
   const [showQR, setShowQR] = useState(false);
+
+  const toggleTheme = () => {
+    onUpdateUser({ theme: theme === 'light' ? 'dark' : 'light' });
+  };
   
   const today = new Date();
   const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', year: 'numeric' };
@@ -26,41 +32,73 @@ export default function Dashboard({ userData, onNavigate, unreadCount }: Dashboa
   ].join('\n');
 
   return (
-    <div className="min-h-screen bg-white relative">
+    <div className="min-h-screen bg-white dark:bg-gray-950 relative transition-colors duration-300">
       {/* Top Header */}
-      <div className="bg-brand-orange pt-4 pb-2 px-6 flex justify-between items-center text-black">
+      <div className="bg-brand-orange pt-4 pb-2 px-6 flex justify-between items-start text-black shadow-md transition-colors duration-300">
         <button 
           onClick={() => onNavigate('profile')}
           className="flex flex-col items-center cursor-pointer active:scale-95 transition-transform"
         >
-          <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center border-2 border-black overflow-hidden">
+          <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center border-2 border-black overflow-hidden shadow-sm">
              <User className="w-8 h-8" />
           </div>
-          <span className="text-xs font-bold mt-1">Profil</span>
+          <span className="text-[10px] font-black uppercase mt-1">Profil</span>
         </button>
         
-        <div className="flex items-center gap-4">
-           {/* Ivory Coast Flag approximation */}
-           <div className="flex w-12 h-8 border border-gray-400">
-              <div className="bg-[#FF8200] flex-1"></div>
-              <div className="bg-white flex-1"></div>
-              <div className="bg-[#009E60] flex-1"></div>
+        <div className="flex items-start gap-4">
+           {/* Ivory Coast Flag */}
+           <div className="flex flex-col items-center">
+              <div className="h-12 flex items-center">
+                 <div className="flex w-12 h-8 border border-black/20 shadow-sm overflow-hidden rounded-sm">
+                    <div className="bg-[#FF8200] flex-1"></div>
+                    <div className="bg-white flex-1"></div>
+                    <div className="bg-[#009E60] flex-1"></div>
+                 </div>
+              </div>
+              <span className="text-[10px] font-black uppercase mt-1 invisible">Flag</span>
            </div>
-           <button 
-             onClick={() => onNavigate('notifications')}
-             className="relative cursor-pointer active:scale-110 transition-transform"
-           >
-              <Bell className="w-10 h-10 fill-black" />
-              {unreadCount > 0 && (
-                <div className="absolute top-0 right-0 bg-white text-brand-orange text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border border-black shadow-sm">
-                  {unreadCount}
-                </div>
-              )}
-           </button>
+
+           {/* Notifications */}
+           <div className="flex flex-col items-center">
+              <div className="h-12 flex items-center">
+                 <button 
+                   onClick={() => onNavigate('notifications')}
+                   className="relative cursor-pointer active:scale-110 transition-transform"
+                 >
+                    <Bell className="w-10 h-10 fill-black" />
+                    {unreadCount > 0 && (
+                      <div className="absolute -top-1 -right-1 bg-white text-brand-orange text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border border-black shadow-sm">
+                        {unreadCount}
+                      </div>
+                    )}
+                 </button>
+              </div>
+              <span className="text-[10px] font-black uppercase mt-1 invisible">Notif</span>
+           </div>
+
+           {/* Theme Toggle */}
+           <div className="flex flex-col items-center">
+              <div className="h-12 flex items-center">
+                 <button 
+                    onClick={toggleTheme}
+                    className="w-10 h-10 bg-white/20 dark:bg-black/10 rounded-full flex items-center justify-center cursor-pointer active:scale-110 transition-transform border border-black/10 shadow-sm"
+                 >
+                    {theme === 'dark' ? (
+                      <Sun className="w-6 h-6 text-yellow-500 fill-yellow-500" />
+                    ) : (
+                      <Moon className="w-6 h-6 text-black fill-black/10" />
+                    )}
+                 </button>
+              </div>
+              <span className="text-[10px] font-black uppercase mt-1 invisible">Mode</span>
+           </div>
         </div>
 
-        <div className="w-12 h-12 bg-brand-orange rounded-full flex items-center justify-center border-2 border-black">
-           <MapPin className="w-7 h-7" />
+        <div className="flex flex-col items-center">
+           <div className="w-12 h-12 bg-brand-orange rounded-full flex items-center justify-center border-2 border-black shadow-sm">
+              <MapPin className="w-7 h-7" />
+           </div>
+           <span className="text-[10px] font-black uppercase mt-1 invisible">Map</span>
         </div>
       </div>
 
@@ -82,24 +120,24 @@ export default function Dashboard({ userData, onNavigate, unreadCount }: Dashboa
       </div>
 
       {/* Grid Content */}
-      <div className="brand-gradient p-6 space-y-6 flex-1 min-h-[60vh]">
+      <div className={`${theme === 'dark' ? 'bg-gray-950' : 'brand-gradient'} p-6 space-y-6 flex-1 min-h-[60vh] transition-colors duration-300`}>
          <div className="grid grid-cols-2 gap-4">
             <motion.button 
                whileTap={{ scale: 0.95 }}
                onClick={() => onNavigate('missions')}
-               className="bg-[#EEEEEE] rounded-3xl p-6 flex flex-col items-center justify-center aspect-square shadow-inner cursor-pointer text-left border-2 border-transparent hover:border-brand-orange/30 transition-all"
+               className="bg-[#EEEEEE] rounded-3xl p-4 flex flex-col items-center justify-center aspect-square shadow-inner cursor-pointer border-4 border-transparent hover:border-brand-orange/30 transition-all group"
             >
-               <div className="flex flex-col items-center gap-2 text-xl font-bold text-black">
-                  <div className="relative">
-                    <span className="text-4xl">📝</span>
-                    {userData.missions.length > 0 && (
-                      <div className="absolute -top-2 -right-2 bg-brand-red text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border border-white">
+               <div className="relative w-full h-full rounded-2xl flex items-center justify-center overflow-hidden bg-white shadow-sm transition-colors">
+                  <ClipboardCheck className="w-20 h-20 text-brand-orange" />
+                  {userData.missions.length > 0 && (
+                     <div className="absolute top-2 right-2 bg-brand-red text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
                         {userData.missions.length}
-                      </div>
-                    )}
-                  </div>
-                  <span className="text-lg">Mes missions</span>
+                     </div>
+                  )}
                </div>
+               <span className="text-[10px] text-center mt-2 font-black text-black uppercase leading-tight tracking-tighter">
+                  Mes missions
+               </span>
             </motion.button>
 
             <motion.div 
@@ -109,7 +147,7 @@ export default function Dashboard({ userData, onNavigate, unreadCount }: Dashboa
                  userData.isActivated ? 'border-brand-orange' : 'border-[#3399FF]'
                }`}
             >
-               <div className={`relative w-full h-full rounded-2xl flex items-center justify-center overflow-hidden transition-colors ${
+               <div className={`relative w-full h-full rounded-2xl flex items-center justify-center overflow-hidden shadow-sm transition-colors ${
                   userData.isActivated ? 'bg-white' : 'bg-transparent'
                }`}>
                   <QrCode className={`w-24 h-24 ${userData.isActivated ? 'text-black opacity-100' : 'text-blue-400 opacity-50'}`} />
@@ -123,7 +161,7 @@ export default function Dashboard({ userData, onNavigate, unreadCount }: Dashboa
                  {userData.isActivated ? 'cliquez pour afficher votre carte' : 'cliquez pour activer votre carte'}
                </span>
             </motion.div>
-         </div>
+          </div>
 
          <motion.button 
             whileTap={{ scale: 0.98 }}
@@ -154,7 +192,7 @@ export default function Dashboard({ userData, onNavigate, unreadCount }: Dashboa
             >
                <MessageSquare className="w-12 h-12 text-brand-orange fill-brand-orange/10 group-hover:fill-brand-orange transition-colors" />
             </motion.button>
-            <span className="text-sm font-black text-black mt-2 uppercase tracking-wide">Message assistant</span>
+            <span className="text-sm font-black text-black dark:text-white mt-2 uppercase tracking-wide">Message assistant</span>
          </div>
       </div>
 

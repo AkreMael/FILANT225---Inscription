@@ -5,6 +5,7 @@ import { ProfileType, PROFILE_LABELS, PROFILE_FIELDS, UserData } from '../types'
 
 interface RegistrationPageProps {
   onComplete: (data: { profileType: ProfileType; details: Record<string, string> }) => void;
+  theme: 'light' | 'dark';
 }
 
 const PROFILE_ICONS: Record<ProfileType, React.ReactNode> = {
@@ -15,7 +16,7 @@ const PROFILE_ICONS: Record<ProfileType, React.ReactNode> = {
   entreprise: <Building2 className="w-5 h-5" />,
 };
 
-export default function RegistrationPage({ onComplete }: RegistrationPageProps) {
+export default function RegistrationPage({ onComplete, theme }: RegistrationPageProps) {
   const [profileType, setProfileType] = useState<ProfileType>('client');
   const [details, setDetails] = useState<Record<string, string>>({});
   const [step, setStep] = useState(1);
@@ -32,29 +33,29 @@ export default function RegistrationPage({ onComplete }: RegistrationPageProps) 
   const fields = PROFILE_FIELDS[profileType];
 
   return (
-    <div className="min-h-screen brand-gradient pt-10 pb-20 px-4 md:px-0">
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-950' : 'brand-gradient'} pt-10 pb-20 px-4 md:px-0 transition-colors duration-300`}>
       <div className="max-w-md mx-auto">
         <div className="text-center mb-10">
           <motion.h1 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-6xl font-black text-white font-display tracking-tighter"
+            className={`text-6xl font-black ${theme === 'dark' ? 'text-brand-orange' : 'text-white'} font-display tracking-tighter`}
           >
-            FILANT <span className="text-white/80">225</span>
+            FILANT <span className={theme === 'dark' ? 'text-white' : 'text-white/80'}>225</span>
           </motion.h1>
-          <p className="text-white font-medium mt-2">Inscription intelligente</p>
+          <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-white'} font-medium mt-2`}>Inscription intelligente</p>
         </div>
 
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white rounded-[2rem] p-8 card-shadow overflow-hidden"
+          className="bg-white dark:bg-gray-900 rounded-[2rem] p-8 card-shadow overflow-hidden"
         >
-          <div className="flex justify-between items-center mb-8 border-b border-gray-100 pb-4">
-            <h2 className="text-xl font-bold text-gray-800">Créez votre profil</h2>
+          <div className="flex justify-between items-center mb-8 border-b border-gray-100 dark:border-gray-800 pb-4">
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Créez votre profil</h2>
             <div className="flex gap-1">
               <div className={`h-1.5 w-8 rounded-full ${step === 1 ? 'bg-brand-orange' : 'bg-green-500'}`} />
-              <div className={`h-1.5 w-8 rounded-full ${step === 2 ? 'bg-brand-orange' : step > 2 ? 'bg-green-500' : 'bg-gray-100'}`} />
+              <div className={`h-1.5 w-8 rounded-full ${step === 2 ? 'bg-brand-orange' : step > 2 ? 'bg-green-500' : 'bg-gray-100 dark:bg-gray-800'}`} />
             </div>
           </div>
 
@@ -79,11 +80,11 @@ export default function RegistrationPage({ onComplete }: RegistrationPageProps) 
                         onClick={() => setProfileType(type)}
                         className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left ${
                           profileType === type 
-                            ? 'border-brand-orange bg-orange-50 text-brand-orange' 
-                            : 'border-gray-100 bg-gray-50 text-gray-600 hover:border-gray-200'
+                            ? 'border-brand-orange bg-orange-50 dark:bg-orange-950/20 text-brand-orange' 
+                            : 'border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 text-gray-600 dark:text-gray-400 hover:border-gray-200 dark:hover:border-gray-700'
                         }`}
                       >
-                        <div className={`p-2 rounded-xl ${profileType === type ? 'bg-brand-orange text-white' : 'bg-white'}`}>
+                        <div className={`p-2 rounded-xl ${profileType === type ? 'bg-brand-orange text-white' : 'bg-white dark:bg-gray-800'}`}>
                           {PROFILE_ICONS[type]}
                         </div>
                         <span className="font-bold">{PROFILE_LABELS[type]}</span>
@@ -107,7 +108,7 @@ export default function RegistrationPage({ onComplete }: RegistrationPageProps) 
                   exit={{ x: -20, opacity: 0 }}
                   className="space-y-4"
                 >
-                  <div className="flex items-center gap-2 text-brand-orange bg-orange-50 p-3 rounded-xl mb-4">
+                  <div className="flex items-center gap-2 text-brand-orange bg-orange-50 dark:bg-orange-950/20 p-3 rounded-xl mb-4">
                     {PROFILE_ICONS[profileType]}
                     <span className="font-bold">{PROFILE_LABELS[profileType]}</span>
                     <button 
@@ -136,7 +137,7 @@ export default function RegistrationPage({ onComplete }: RegistrationPageProps) 
                           placeholder={`Entrez votre ${field.toLowerCase()}`}
                           value={details[field] || ''}
                           onChange={(e) => handleFieldChange(field, e.target.value)}
-                          className="w-full bg-gray-50 border-2 border-transparent focus:border-brand-orange rounded-2xl py-4 pl-12 pr-4 transition-all outline-none font-medium text-gray-800"
+                          className="w-full bg-gray-50 dark:bg-gray-900/50 border-2 border-transparent focus:border-brand-orange rounded-2xl py-4 pl-12 pr-4 transition-all outline-none font-medium text-gray-800 dark:text-gray-200"
                         />
                       </div>
                     </div>
@@ -161,7 +162,7 @@ export default function RegistrationPage({ onComplete }: RegistrationPageProps) 
           </form>
         </motion.div>
 
-        <div className="mt-8 flex justify-center gap-4 text-white/60">
+        <div className={`mt-8 flex justify-center gap-4 ${theme === 'dark' ? 'text-gray-500' : 'text-white/60'}`}>
            <div className="text-center">
               <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mb-1 mx-auto">
                  <CheckCircle2 className="w-6 h-6" />
