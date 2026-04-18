@@ -93,13 +93,6 @@ export default function Dashboard({ userData, onNavigate, unreadCount, onUpdateU
               <span className="text-[10px] font-black uppercase mt-1 invisible">Mode</span>
            </div>
         </div>
-
-        <div className="flex flex-col items-center">
-           <div className="w-12 h-12 bg-brand-orange rounded-full flex items-center justify-center border-2 border-black shadow-sm">
-              <MapPin className="w-7 h-7" />
-           </div>
-           <span className="text-[10px] font-black uppercase mt-1 invisible">Map</span>
-        </div>
       </div>
 
       <div className="bg-brand-orange py-2 px-4 text-center">
@@ -182,17 +175,31 @@ export default function Dashboard({ userData, onNavigate, unreadCount, onUpdateU
               </>
             )}
          </motion.button>
+ 
+         <div className="flex justify-center gap-8 pt-4">
+            <div className="flex flex-col items-center">
+               <motion.button 
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => onNavigate('chat')}
+                  className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(255,102,0,0.3)] border-4 border-brand-orange group cursor-pointer"
+               >
+                  <MessageSquare className="w-12 h-12 text-brand-orange fill-brand-orange/10 group-hover:fill-brand-orange transition-colors" />
+               </motion.button>
+               <span className="text-[10px] font-black text-black dark:text-white mt-2 uppercase tracking-wide text-center">Message assistant</span>
+            </div>
 
-         <div className="flex flex-col items-center pt-4">
-            <motion.button 
-               whileHover={{ scale: 1.1 }}
-               whileTap={{ scale: 0.9 }}
-               onClick={() => onNavigate('chat')}
-               className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(255,102,0,0.3)] border-4 border-brand-orange group cursor-pointer"
-            >
-               <MessageSquare className="w-12 h-12 text-brand-orange fill-brand-orange/10 group-hover:fill-brand-orange transition-colors" />
-            </motion.button>
-            <span className="text-sm font-black text-black dark:text-white mt-2 uppercase tracking-wide">Message assistant</span>
+            <div className="flex flex-col items-center">
+               <motion.button 
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => onNavigate('localisation')}
+                  className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(255,102,0,0.3)] border-4 border-brand-orange group cursor-pointer"
+               >
+                  <MapPin className="w-12 h-12 text-brand-orange fill-brand-orange/10 group-hover:fill-brand-orange transition-colors" />
+               </motion.button>
+               <span className="text-[10px] font-black text-black dark:text-white mt-2 uppercase tracking-wide text-center">Localisation</span>
+            </div>
          </div>
       </div>
 

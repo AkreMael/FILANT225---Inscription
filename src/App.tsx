@@ -6,10 +6,11 @@ import NotificationsPage from './components/NotificationsPage';
 import ChatPage from './components/ChatPage';
 import PaymentPage from './components/PaymentPage';
 import MissionsPage from './components/MissionsPage';
+import LocalisationPage from './components/LocalisationPage';
 import { UserData, Notification, Mission } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 
-export type View = 'registration' | 'dashboard' | 'profile' | 'notifications' | 'chat' | 'payment' | 'missions';
+export type View = 'registration' | 'dashboard' | 'profile' | 'notifications' | 'chat' | 'payment' | 'missions' | 'localisation';
 
 export default function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -193,6 +194,13 @@ export default function App() {
                 <PaymentPage 
                   onBack={navigateToDashboard} 
                   onSuccess={handlePaymentSuccess}
+                  theme={theme}
+                />
+              )}
+
+              {activeView === 'localisation' && (
+                <LocalisationPage 
+                  onBack={navigateToDashboard}
                   theme={theme}
                 />
               )}
