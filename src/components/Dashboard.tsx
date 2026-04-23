@@ -104,11 +104,11 @@ export default function Dashboard({ userData, onNavigate, unreadCount, onUpdateU
       {/* Main Brand Header */}
       <div className="bg-[#442200] py-6 px-4 flex justify-center items-center gap-4 relative overflow-hidden">
          <div className="absolute top-[-20px] left-[-20px] w-40 h-40 bg-white opacity-5 rounded-full blur-3xl"></div>
-         <h1 className="text-7xl font-black text-brand-orange italic font-display tracking-tighter shrink-0">
-           FILANT <span className="text-white">225</span>
+         <h1 className="text-5xl font-black text-brand-orange italic font-display tracking-tighter shrink-0">
+            FILANT <span className="text-white">225</span>
          </h1>
-         <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg cursor-pointer">
-            <Info className="w-7 h-7 text-black stroke-[3]" />
+         <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg cursor-pointer">
+            <Info className="w-5 h-5 text-black stroke-[3]" />
          </div>
       </div>
 
