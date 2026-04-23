@@ -225,31 +225,25 @@ export default function ProfilePanel({ userData, onBack, onLogout, onUpdateUser 
           </div>
         </div>
 
-              <div className="grid grid-cols-1 gap-5 px-2">
+              <div className="grid grid-cols-1 gap-3 px-2">
                 <ProfileButton 
-                  icon={<div className="p-3 border-2 border-black/20 rounded-full"><Clock className="w-8 h-8 text-black" /></div>} 
+                  icon={<Clock className="w-5 h-5" />} 
                   label="DISPONIBILITÉ" 
                   onClick={() => setSubView('availability')}
                 />
                 <ProfileButton 
-                  icon={<CreditCard className="w-10 h-10 text-black" />} 
+                  icon={<CreditCard className="w-5 h-5" />} 
                   label="PIÈCE D'IDENTITÉ AUTO-VERSO" 
                   onClick={() => setSubView('identity')}
                 />
                 <ProfileButton 
-                  icon={<div className="w-12 h-12 bg-blue-900 dark:bg-yellow-100 rounded-full flex items-center justify-center border-2 border-white/20 dark:border-yellow-200 shadow-lg transition-transform hover:scale-105 active:scale-95">
-                    {userData.theme === 'dark' ? (
-                      <Sun className="w-8 h-8 text-yellow-600 fill-yellow-500" />
-                    ) : (
-                      <Moon className="w-8 h-8 text-white fill-yellow-400" />
-                    )}
-                  </div>} 
+                  icon={userData.theme === 'dark' ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5 text-gray-600" />} 
                   label="MODE SOMBRE" 
                   onClick={toggleTheme}
                   status={userData.theme === 'dark' ? 'OUI' : 'NON'}
                 />
                 <ProfileButton 
-                  icon={<div className="w-12 h-12 bg-black rounded-full flex items-center justify-center border-2 border-white/20"><Info className="w-8 h-8 text-white" /></div>} 
+                  icon={<Info className="w-5 h-5" />} 
                   label="INFORMATIONS" 
                   onClick={() => setSubView('info')}
                 />
@@ -344,15 +338,15 @@ function ProfileButton({ icon, label, onClick, status }: { icon: React.ReactNode
     <motion.button 
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className="flex items-center gap-6 p-6 bg-[#959595] rounded-[1.8rem] shadow-none border-none transition-all text-left relative group active:scale-95"
+      className="flex items-center gap-4 p-3 px-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 transition-all text-left active:scale-95 group shadow-sm hover:shadow-md hover:border-brand-orange/30"
     >
-      <div className="w-14 h-14 flex items-center justify-center text-black shrink-0">
+      <div className="w-10 h-10 flex items-center justify-center bg-white dark:bg-gray-800 rounded-xl text-gray-700 dark:text-gray-300 shrink-0 shadow-sm group-hover:text-brand-orange transition-colors">
         {icon}
       </div>
       <div className="flex-1">
-        <h3 className="font-bold text-white uppercase tracking-tight text-xl leading-tight">{label}</h3>
+        <h3 className="font-bold text-gray-800 dark:text-gray-100 uppercase tracking-tight text-xs leading-tight">{label}</h3>
         {status && (
-          <p className="text-[11px] font-black tracking-widest mt-0.5 text-white/70 uppercase">
+          <p className="text-[10px] font-black tracking-widest mt-0.5 text-brand-orange uppercase">
             {status}
           </p>
         )}

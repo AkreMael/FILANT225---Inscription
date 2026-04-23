@@ -159,20 +159,22 @@ export default function Dashboard({ userData, onNavigate, unreadCount, onUpdateU
          <motion.button 
             whileTap={{ scale: 0.98 }}
             onClick={() => !userData.isActivated && onNavigate('payment')}
-            className={`w-full py-6 rounded-[2.5rem] shadow-[0_8px_0_0_rgba(150,0,0,0.5)] active:shadow-none translate-y-[-4px] active:translate-y-0 transition-all font-display text-2xl font-black uppercase tracking-wider ${
-              userData.isActivated ? 'bg-green-600 text-white shadow-[0_8px_0_0_rgba(0,100,0,0.5)]' : 'bg-brand-red text-white'
+            className={`w-full py-4 px-6 rounded-2xl transition-all font-bold uppercase tracking-wide flex flex-col items-center justify-center gap-1 shadow-sm active:transition-none active:scale-[0.99] ${
+              userData.isActivated 
+                ? 'bg-green-600/10 text-green-600 border border-green-600/20 shadow-none' 
+                : 'bg-brand-red text-white shadow-lg shadow-red-100'
             }`}
          >
             {userData.isActivated ? (
-              <div className="flex items-center justify-center gap-3">
-                 MISE EN RELATION ACTIVE
-                 <CheckCircle2 className="w-8 h-8" />
+              <div className="flex items-center justify-center gap-2">
+                 <span className="text-xs font-black">MISE EN RELATION ACTIVE</span>
+                 <CheckCircle2 className="w-5 h-5" />
               </div>
             ) : (
-              <>
-                 ACTIVER LA MISE EN RELATION - 7 100 F
-                 <p className="text-sm font-bold opacity-80 normal-case mt-1 tracking-tight">Cliquez pour activer votre mise en relation professionnelle</p>
-              </>
+              <div className="text-center">
+                 <p className="text-xs font-black">ACTIVER LA MISE EN RELATION - 7 100 F</p>
+                 <p className="text-[10px] font-medium opacity-80 normal-case mt-0.5">Cliquez pour activer votre mise en relation professionnelle</p>
+              </div>
             )}
          </motion.button>
  
