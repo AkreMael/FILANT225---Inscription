@@ -94,7 +94,13 @@ export default function RegistrationPage({ onComplete, theme }: RegistrationPage
                   </div>
                   <button
                     type="button"
-                    onClick={() => setStep(2)}
+                    onClick={() => {
+                      if (profileType === 'client') {
+                        window.location.href = 'https://filant225-a1.vercel.app/';
+                      } else {
+                        setStep(2);
+                      }
+                    }}
                     className="w-full bg-brand-orange text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 mt-6 hover:bg-brand-dark-orange transition-colors"
                   >
                     Suivant <ChevronRight className="w-5 h-5" />
