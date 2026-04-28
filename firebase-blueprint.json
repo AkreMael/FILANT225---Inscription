@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account information and settings",
+      "type": "object",
+      "properties": {
+        "profileType": { "type": "string", "enum": ["client", "travailleur", "proprietaire", "agence", "entreprise"] },
+        "details": { "type": "object" },
+        "isActivated": { "type": "boolean" },
+        "isAvailable": { "type": "boolean" },
+        "theme": { "type": "string", "enum": ["light", "dark"] },
+        "idDocuments": {
+          "type": "object",
+          "properties": {
+            "recto": { "type": "string" },
+            "verso": { "type": "string" }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["profileType", "isActivated", "isAvailable", "theme"]
+    },
+    "Mission": {
+      "title": "Mission",
+      "description": "A service mission or job",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "date": { "type": "string" },
+        "status": { "type": "string", "enum": ["terminée", "en cours", "annulée"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "date", "status"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "System or user notification",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "time": { "type": "string" },
+        "read": { "type": "boolean" },
+        "type": { "type": "string", "enum": ["info", "alert", "success"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "message", "read", "type"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Main user document"
+    },
+    "/users/{userId}/missions/{missionId}": {
+      "schema": "Mission",
+      "description": "Subcollection for user missions"
+    },
+    "/users/{userId}/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "Subcollection for user notifications"
+    }
+  }
+}

@@ -9,10 +9,20 @@ import MissionsPage from './components/MissionsPage';
 import LocalisationPage from './components/LocalisationPage';
 import { UserData, Notification, Mission } from './types';
 import { motion, AnimatePresence } from 'motion/react';
+import { testFirebaseConnection } from './lib/firebase';
 
 export type View = 'registration' | 'dashboard' | 'profile' | 'notifications' | 'chat' | 'payment' | 'missions' | 'localisation';
 
 export default function App() {
+  const [firebaseStatus, setFirebaseStatus] = useState<'testing' | 'success' | 'failed'>('testing');
+
+  useEffect(() => {
+    async function checkFirebase() {
+      const isConnected = await testFirebaseConnection();
+      setFirebaseStatus(isConnected ? 'success' : 'failed');
+    }
+    checkFirebase();
+  }, []);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('filant225_theme');
     return (saved as 'light' | 'dark') || 'light';
@@ -204,6 +214,13 @@ export default function App() {
                   theme={theme}
                 />
               )}
+
+              {activeView === 'localisation' && (
+                <LocalisationPage 
+                  onBack={navigateToDashboard}
+                  theme={theme}
+                />
+              )}
             </motion.div>
 
             <AnimatePresence>
@@ -219,6 +236,17 @@ export default function App() {
           </>
         )}
       </AnimatePresence>
+
+      {/* Firebase Status Pulse (Bottom Right) */}
+      <div className="fixed bottom-4 right-4 z-[9999] flex items-center gap-2 px-3 py-1.5 bg-black/80 rounded-full border border-white/10 backdrop-blur-sm pointer-events-none">
+        <div className={`w-2 h-2 rounded-full animate-pulse ${
+          firebaseStatus === 'success' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 
+          firebaseStatus === 'failed' ? 'bg-red-500' : 'bg-brand-orange'
+        }`} />
+        <span className="text-[10px] font-black text-white/50 tracking-tighter uppercase">
+          FB DB: {firebaseStatus === 'success' ? 'CONNECTED' : firebaseStatus === 'failed' ? 'ERROR' : 'SYNCING'}
+        </span>
+      </div>
     </div>
   );
 }
