@@ -53,7 +53,7 @@ export default function PaymentPage({ onBack, onSuccess, theme }: PaymentPagePro
                  </div>
                  <div className="text-left">
                     <p className="font-bold text-gray-900 leading-tight text-sm">Mobile Money</p>
-                    <p className="text-[10px] text-gray-500 font-bold uppercase">Orange, MTN, Wave</p>
+                    <p className="text-[10px] text-gray-500 font-bold uppercase">(Wave uniquement)</p>
                  </div>
                  <div className="ml-auto w-5 h-5 rounded-full border-4 border-brand-orange" />
               </button>
