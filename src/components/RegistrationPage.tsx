@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Briefcase, Truck, Home, Building2, ChevronRight, CheckCircle2, Phone, MapPin, UserCircle } from 'lucide-react';
-import { ProfileType, PROFILE_LABELS, PROFILE_FIELDS, UserData } from '../types';
+import { User, Briefcase, Truck, Home, Building2, ChevronRight, CheckCircle2, Phone, MapPin, UserCircle, LogIn } from 'lucide-react';
+import { ProfileType, PROFILE_LABELS, PROFILE_FIELDS } from '../types';
+import { auth } from '../lib/firebase';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 interface RegistrationPageProps {
   onComplete: (data: { profileType: ProfileType; details: Record<string, string> }) => void;
@@ -20,6 +22,40 @@ export default function RegistrationPage({ onComplete, theme }: RegistrationPage
   const [profileType, setProfileType] = useState<ProfileType>('client');
   const [details, setDetails] = useState<Record<string, string>>({});
   const [step, setStep] = useState(1);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  React.useEffect(() => {
+    const user = auth.currentUser;
+    if (user) {
+      setDetails(prev => ({
+        ...prev,
+        email: user.email || '',
+        firstName: user.displayName?.split(' ')[0] || '',
+        lastName: user.displayName?.split(' ').slice(1).join(' ') || ''
+      }));
+    }
+  }, []);
+
+  const handleGoogleLogin = async () => {
+    setIsLoggingIn(true);
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      if (result.user) {
+        setDetails(prev => ({
+          ...prev,
+          email: result.user.email || '',
+          firstName: result.user.displayName?.split(' ')[0] || '',
+          lastName: result.user.displayName?.split(' ').slice(1).join(' ') || ''
+        }));
+        setStep(1); // Stay on step 1 to choose profile, but email is now set
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
 
   const handleFieldChange = (field: string, value: string) => {
     setDetails(prev => ({ ...prev, [field]: value }));
@@ -52,11 +88,30 @@ export default function RegistrationPage({ onComplete, theme }: RegistrationPage
           className="bg-white dark:bg-gray-900 rounded-[2rem] p-8 card-shadow overflow-hidden"
         >
           <div className="flex justify-between items-center mb-8 border-b border-gray-100 dark:border-gray-800 pb-4">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Créez votre profil</h2>
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Connexion rapide</h2>
             <div className="flex gap-1">
               <div className={`h-1.5 w-8 rounded-full ${step === 1 ? 'bg-brand-orange' : 'bg-green-500'}`} />
               <div className={`h-1.5 w-8 rounded-full ${step === 2 ? 'bg-brand-orange' : step > 2 ? 'bg-green-500' : 'bg-gray-100 dark:bg-gray-800'}`} />
             </div>
+          </div>
+
+          <div className="mb-8">
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={isLoggingIn || !!auth.currentUser}
+              className={`w-full flex items-center justify-center gap-3 bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 py-3 rounded-2xl font-bold transition-all active:scale-[0.98] ${
+                auth.currentUser ? 'text-green-500 border-green-500/20' : 'text-gray-700 dark:text-white'
+              }`}
+            >
+              {auth.currentUser ? (
+                <CheckCircle2 className="w-5 h-5 text-green-500" />
+              ) : (
+                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+              )}
+              {isLoggingIn ? 'Connexion...' : auth.currentUser ? `Identité vérifiée (${auth.currentUser.email})` : 'Vérifier mon identité Google'}
+            </button>
+            <p className="text-[10px] text-gray-400 text-center mt-2 font-bold uppercase tracking-widest">Recommandé pour la sécurité</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">

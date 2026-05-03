@@ -24,7 +24,7 @@ export default function MissionsPage({ missions, onBack, theme }: MissionsPagePr
   const completedMissions = missions.filter(m => m.status === 'terminée').length;
 
   return (
-    <div className={`fixed inset-0 ${theme === 'dark' ? 'bg-gray-950 text-white' : 'bg-white'} z-50 flex flex-col overflow-hidden transition-colors duration-300`}>
+    <div className={`min-h-[calc(100vh-80px)] flex flex-col overflow-hidden transition-colors duration-300`}>
       {/* Header */}
       <div className="bg-brand-orange p-6 flex items-center gap-4 text-black shadow-lg z-10 shrink-0">
         <button onClick={onBack} className="p-2 bg-white/20 rounded-full cursor-pointer hover:bg-white/30 transition-colors active:scale-95">
@@ -64,10 +64,26 @@ export default function MissionsPage({ missions, onBack, theme }: MissionsPagePr
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="font-bold text-gray-900 leading-tight">{mission.title}</h3>
+                  <h3 className="font-bold text-gray-900 leading-tight">
+                    {(() => {
+                      let text = mission.title;
+                      if (mission.category === 'plomberie') {
+                        text = "Mission plombier";
+                      } else if (mission.category === 'equipement') {
+                        text = "Mission équipement à louer";
+                      } else if (mission.category === 'immobilier') {
+                        text = "Mission agent immobilier pour magasin";
+                      }
+                      
+                      if (mission.status === 'en cours') {
+                        return `${text} en cours`;
+                      }
+                      return text;
+                    })()}
+                  </h3>
                   <p className="text-[10px] text-gray-400 font-bold uppercase mt-1 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    Effectuée le {mission.date}
+                    {mission.status === 'en cours' ? 'Inscrite le' : 'Effectuée le'} {mission.date}
                   </p>
                 </div>
                 <button className="text-gray-300">

@@ -47,6 +47,18 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["title", "message", "read", "type"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Chat message between admin and user",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "sender": { "type": "string", "enum": ["admin", "user"] },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" }
+      },
+      "required": ["text", "sender", "timestamp"]
     }
   },
   "firestore": {
@@ -61,6 +73,10 @@
     "/users/{userId}/notifications/{notificationId}": {
       "schema": "Notification",
       "description": "Subcollection for user notifications"
+    },
+    "/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Global messages collection for admin communication"
     }
   }
 }

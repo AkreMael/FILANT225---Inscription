@@ -48,7 +48,7 @@ export default function LocalisationPage({ onBack, theme }: LocalisationPageProp
   };
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-[#0A0E17]' : 'bg-gray-100'} flex flex-col text-white font-sans`}>
+    <div className={`min-h-[calc(100vh-80px)] ${theme === 'dark' ? 'bg-[#0A0E17]' : 'bg-gray-100'} flex flex-col text-white font-sans`}>
       {/* Header */}
       <div className="bg-[#111827] p-6 flex items-center justify-between border-b border-white/5">
         <div className="flex items-center gap-4">

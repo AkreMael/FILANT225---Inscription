@@ -23,7 +23,7 @@ export default function NotificationsPage({ notifications, onBack, onMarkAsRead,
   }, [onMarkAsRead]);
 
   return (
-    <div className={`fixed inset-0 ${theme === 'dark' ? 'bg-gray-950' : 'bg-white'} z-50 flex flex-col transition-colors duration-300`}>
+    <div className={`min-h-[calc(100vh-80px)] flex flex-col transition-colors duration-300`}>
       <div className="bg-brand-orange p-6 flex items-center gap-4 text-black shadow-md shrink-0">
         <button onClick={onBack} className="p-2 bg-white/20 rounded-full cursor-pointer hover:bg-white/30 active:scale-95 transition-transform">
            <ChevronLeft className="w-6 h-6" />

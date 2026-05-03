@@ -3,6 +3,7 @@ export type ProfileType = 'client' | 'travailleur' | 'proprietaire' | 'agence' |
 export interface Mission {
   id: number;
   title: string;
+  category?: 'plomberie' | 'equipement' | 'immobilier' | 'autre';
   date: string;
   status: 'terminée' | 'en cours' | 'annulée';
 }
@@ -27,6 +28,8 @@ export interface UserData {
     verso?: string;
   };
   theme: 'light' | 'dark';
+  createdAt?: string;
+  updatedAt?: any;
 }
 
 export const PROFILE_LABELS: Record<ProfileType, string> = {

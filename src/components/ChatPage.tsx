@@ -1,40 +1,101 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
-import { ChevronLeft, Send, User, Bot } from 'lucide-react';
+import { ChevronLeft, Send, Bot } from 'lucide-react';
+import { db, auth } from '../lib/firebase';
+import { collection, query, where, onSnapshot, addDoc, orderBy, serverTimestamp } from 'firebase/firestore';
+import { UserData } from '../types';
+
+interface Message {
+  id: string;
+  text: string;
+  sender: 'admin' | 'user';
+  time: string;
+}
 
 interface ChatPageProps {
+  userData: UserData;
   onBack: () => void;
   onNewMessage: () => void;
   theme: 'light' | 'dark';
 }
 
-export default function ChatPage({ onBack, onNewMessage, theme }: ChatPageProps) {
-  const [messages, setMessages] = useState([
-    { id: 1, text: "Bonjour ! Bienvenue sur l'assistance FILANT225.", sender: 'bot', time: '14:00' },
-    { id: 2, text: "Comment puis-je vous aider aujourd'hui ?", sender: 'bot', time: '14:00' },
+export default function ChatPage({ userData, onBack, onNewMessage, theme }: ChatPageProps) {
+  const [messages, setMessages] = useState<Message[]>([
+    { id: 'welcome-1', text: "Bonjour ! Bienvenue sur l'assistance FILANT225.", sender: 'admin', time: '14:00' },
   ]);
   const [input, setInput] = useState('');
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
-    const newMessage = { id: Date.now(), text: input, sender: 'user', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
-    setMessages([...messages, newMessage]);
+  useEffect(() => {
+    // Listen for messages from/to this user using their UID
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
+
+    const q = query(
+      collection(db, 'messages'),
+      where('userId', '==', userId),
+      orderBy('timestamp', 'asc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const newMessages = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          text: data.text,
+          sender: data.sender,
+          time: data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'
+        };
+      }) as Message[];
+
+      if (newMessages.length > 0) {
+        setMessages(prev => {
+          // Keep welcome message and add DB messages
+          const welcome = prev.filter(m => m.id.startsWith('welcome-'));
+          const existingIds = new Set(welcome.map(m => m.id));
+          const uniqueNew = newMessages.filter(m => !existingIds.has(m.id));
+          return [...welcome, ...uniqueNew];
+        });
+        
+        // Notify if last message is from admin
+        const lastMsg = newMessages[newMessages.length - 1];
+        if (lastMsg.sender === 'admin') {
+          onNewMessage();
+        }
+      }
+    }, (error) => {
+      console.error("Firestore listener error:", error);
+    });
+
+    return () => unsubscribe();
+  }, [userData?.details?.email, onNewMessage]);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const handleSend = async () => {
+    if (!input.trim() || !auth.currentUser) return;
+    const userId = auth.currentUser.uid;
+    
     setInput('');
     
-    // Auto response
-    setTimeout(() => {
-      setMessages(prev => [...prev, { 
-        id: Date.now() + 1, 
-        text: "Un conseiller va vous répondre dans quelques instants. Merci de patienter.", 
-        sender: 'bot', 
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
-      }]);
-      onNewMessage();
-    }, 1500);
+    try {
+      await addDoc(collection(db, 'messages'), {
+        text: input,
+        sender: 'user',
+        userId: userId,
+        timestamp: serverTimestamp()
+      });
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
   };
 
   return (
-    <div className={`fixed inset-0 ${theme === 'dark' ? 'bg-gray-950' : 'bg-white'} z-50 flex flex-col transition-colors duration-300`}>
+    <div className={`min-h-[calc(100vh-80px)] flex flex-col transition-colors duration-300`}>
       <div className="bg-brand-orange p-6 flex items-center gap-4 text-black shrink-0 shadow-md">
         <button onClick={onBack} className="p-2 bg-white/20 rounded-full active:scale-95 transition-transform">
            <ChevronLeft className="w-6 h-6" />
@@ -50,7 +111,10 @@ export default function ChatPage({ onBack, onNewMessage, theme }: ChatPageProps)
         </div>
       </div>
 
-      <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${theme === 'dark' ? 'bg-gray-950' : 'bg-gray-50'}`}>
+      <div 
+        ref={scrollRef}
+        className={`flex-1 overflow-y-auto p-4 space-y-4 ${theme === 'dark' ? 'bg-gray-950' : 'bg-gray-50'}`}
+      >
         {messages.map((msg) => (
           <motion.div 
             key={msg.id}
