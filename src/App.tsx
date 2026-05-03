@@ -8,15 +8,16 @@ import PaymentPage from './components/PaymentPage';
 import MissionsPage from './components/MissionsPage';
 import LocalisationPage from './components/LocalisationPage';
 import AdminPage from './components/AdminPage';
+import LoginPage from './components/LoginPage';
 import { db, auth } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { UserData, Notification, Mission } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 import { testFirebaseConnection } from './lib/firebase';
 import { Home, MessageSquare, ShieldCheck, MapPin } from 'lucide-react';
 
-export type View = 'registration' | 'dashboard' | 'profile' | 'notifications' | 'chat' | 'payment' | 'missions' | 'localisation' | 'admin';
+export type View = 'login' | 'registration' | 'dashboard' | 'profile' | 'notifications' | 'chat' | 'payment' | 'missions' | 'localisation' | 'admin';
 
 export default function App() {
   const [firebaseStatus, setFirebaseStatus] = useState<'testing' | 'success' | 'failed'>('testing');
@@ -27,21 +28,37 @@ export default function App() {
       setIsAuthReady(true);
       if (user) {
         console.log("Firebase Auth: signed in as", user.email);
-        // Sync basic info to Firestore immediately to ensure EVERY user is recorded
-        try {
-          const userRef = doc(db, 'users', user.uid);
-          await setDoc(userRef, {
-            email: user.email,
-            displayName: user.displayName,
-            photoURL: user.photoURL,
-            lastLogin: serverTimestamp(),
-          }, { merge: true });
-          console.log("Basic user info synced to Firestore automatically.");
-        } catch (e) {
-          console.error("Error auto-syncing user to DB:", e);
+        
+        // Admin auto-redirect
+        if (user.email === 'filantmael225@gmail.com') {
+          setActiveView('admin');
+        } else {
+          // Check if user already has a profile
+          try {
+            const userRef = doc(db, 'users', user.uid);
+            const userSnap = await getDoc(userRef);
+            
+            if (userSnap.exists() && userSnap.data().profileType) {
+              setUserData(userSnap.data() as UserData);
+              setActiveView('dashboard');
+            } else {
+              setActiveView('registration');
+            }
+
+            // Sync basic info
+            await setDoc(userRef, {
+              email: user.email,
+              displayName: user.displayName,
+              photoURL: user.photoURL,
+              lastLogin: serverTimestamp(),
+            }, { merge: true });
+          } catch (e) {
+            console.error("Error auto-syncing user to DB:", e);
+          }
         }
       } else {
         console.log("Firebase Auth: signed out");
+        setActiveView('login');
       }
     });
     return () => unsubscribe();
@@ -69,9 +86,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [activeView, setActiveView] = useState<View>(() => {
-    return localStorage.getItem('filant225_user') ? 'dashboard' : 'registration';
-  });
+  const [activeView, setActiveView] = useState<View>('login');
 
   const [adminViewingUser, setAdminViewingUser] = useState<UserData | null>(null);
 
@@ -225,14 +240,79 @@ export default function App() {
 
   return (
     <div className={`min-h-screen overflow-x-hidden transition-colors duration-300 ${theme === 'dark' ? 'dark bg-gray-950' : 'bg-white'}`}>
-      <AnimatePresence mode="wait">
+      {!isAuthReady ? (
+        <div className="min-h-screen flex items-center justify-center bg-brand-orange">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+            <p className="text-[10px] font-black text-white uppercase tracking-widest">Initialisation...</p>
+          </div>
+        </div>
+      ) : (
+        <AnimatePresence mode="wait">
+        {activeView === 'login' && (
+          <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <LoginPage onLoginSuccess={(user) => {
+               if (user.email === 'filantmael225@gmail.com') {
+                 setActiveView('admin');
+               } else {
+                 setActiveView('registration');
+               }
+            }} />
+          </motion.div>
+        )}
+
         {activeView === 'registration' && (
           <motion.div key="registration" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
              <RegistrationPage onComplete={handleRegistrationComplete} theme={theme} />
           </motion.div>
         )}
         
-        {userData && (
+        {(auth.currentUser?.email === 'filantmael225@gmail.com') ? (
+          <motion.div 
+            key="admin-root" 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="min-h-screen pb-24"
+          >
+            {activeView === 'admin' ? (
+              <AdminPage 
+                onBack={() => {}} 
+                onViewMissions={(user) => {
+                  setAdminViewingUser(user);
+                  setActiveView('missions');
+                }}
+              />
+            ) : activeView === 'missions' && adminViewingUser ? (
+              <MissionsPage 
+                missions={adminViewingUser.missions}
+                onBack={() => {
+                  setAdminViewingUser(null);
+                  setActiveView('admin');
+                }}
+                theme={theme}
+              />
+            ) : (
+              <AdminPage 
+                onBack={() => {}} 
+                onViewMissions={(user) => {
+                  setAdminViewingUser(user);
+                  setActiveView('missions');
+                }}
+              />
+            )}
+
+            {/* Admin Logout Button */}
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2">
+              <button 
+                onClick={() => auth.signOut()}
+                className="bg-red-500 text-white px-8 py-3 rounded-full font-black uppercase tracking-widest leading-none shadow-xl shadow-red-500/20 active:scale-95 transition-all text-[10px]"
+              >
+                Déconnexion Admin
+              </button>
+            </div>
+          </motion.div>
+        ) : userData && (
           <>
             <motion.div 
               key={activeView} 
@@ -359,7 +439,7 @@ export default function App() {
           </>
         )}
       </AnimatePresence>
-
+      )}
     </div>
   );
 }

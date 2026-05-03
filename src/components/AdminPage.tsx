@@ -66,8 +66,8 @@ export default function AdminPage({ onBack, onViewMissions }: AdminPageProps) {
   };
 
   const filteredUsers = users.filter(user => 
-    Object.values(user.details || {}).some(val => val.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    user.profileType.includes(searchTerm.toLowerCase()) ||
+    Object.values(user.details || {}).some(val => String(val).toLowerCase().includes(searchTerm.toLowerCase())) ||
+    user.profileType.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.id.includes(searchTerm)
   );
 

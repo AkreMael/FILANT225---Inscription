@@ -36,27 +36,6 @@ export default function RegistrationPage({ onComplete, theme }: RegistrationPage
     }
   }, []);
 
-  const handleGoogleLogin = async () => {
-    setIsLoggingIn(true);
-    const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      if (result.user) {
-        setDetails(prev => ({
-          ...prev,
-          email: result.user.email || '',
-          firstName: result.user.displayName?.split(' ')[0] || '',
-          lastName: result.user.displayName?.split(' ').slice(1).join(' ') || ''
-        }));
-        setStep(1); // Stay on step 1 to choose profile, but email is now set
-      }
-    } catch (error) {
-      console.error("Login failed:", error);
-    } finally {
-      setIsLoggingIn(false);
-    }
-  };
-
   const handleFieldChange = (field: string, value: string) => {
     setDetails(prev => ({ ...prev, [field]: value }));
   };
@@ -95,23 +74,12 @@ export default function RegistrationPage({ onComplete, theme }: RegistrationPage
             </div>
           </div>
 
-          <div className="mb-8">
-            <button
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={isLoggingIn || !!auth.currentUser}
-              className={`w-full flex items-center justify-center gap-3 bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 py-3 rounded-2xl font-bold transition-all active:scale-[0.98] ${
-                auth.currentUser ? 'text-green-500 border-green-500/20' : 'text-gray-700 dark:text-white'
-              }`}
-            >
-              {auth.currentUser ? (
-                <CheckCircle2 className="w-5 h-5 text-green-500" />
-              ) : (
-                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
-              )}
-              {isLoggingIn ? 'Connexion...' : auth.currentUser ? `Identité vérifiée (${auth.currentUser.email})` : 'Vérifier mon identité Google'}
-            </button>
-            <p className="text-[10px] text-gray-400 text-center mt-2 font-bold uppercase tracking-widest">Recommandé pour la sécurité</p>
+          <div className="mb-8 p-4 bg-green-50 dark:bg-green-900/20 rounded-2xl border border-green-100 dark:border-green-800/30 flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 text-green-500" />
+            <div className="flex-1">
+              <p className="text-[10px] font-black text-green-600 dark:text-green-400 uppercase tracking-widest">Identité Vérifiée</p>
+              <p className="text-xs font-bold text-gray-700 dark:text-gray-200">{auth.currentUser?.email}</p>
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
