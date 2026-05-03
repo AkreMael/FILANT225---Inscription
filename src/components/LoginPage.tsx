@@ -27,22 +27,39 @@ export default function LoginPage({ onAccessGranted }: LoginPageProps) {
     setError(null);
 
     try {
+      console.log("Fetching /api/verify-code with code:", code);
       const response = await fetch('/api/verify-code', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({ code })
       });
       
+      console.log("Server response status:", response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Erreur serveur (${response.status})`);
+      }
+
       const result = await response.json();
+      console.log("Server verification result:", result);
       
       if (result.success) {
         onAccessGranted(result.role);
       } else {
-        setError("Code invalide.");
+        setError(result.message || "Code invalide.");
       }
-    } catch (err) {
-      console.error("Verification failed:", err);
-      setError("Erreur de connexion au serveur.");
+    } catch (err: any) {
+      console.error("Verification error details:", err);
+      // If it's a network error, tell the user to check their connection
+      if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+        setError("Impossible de contacter le serveur. Veuillez vérifier votre connexion internet.");
+      } else {
+        setError(`Erreur: ${err.message || "Problème de connexion au serveur"}`);
+      }
     } finally {
       setIsVerifying(false);
     }

@@ -11,15 +11,21 @@ async function startServer() {
   // API Route for code verification
   app.post("/api/verify-code", (req, res) => {
     const { code } = req.body;
+    console.log(`Verifying code: ${code}`);
     
     // The secret code requested by the user
-    const ADMIN_CODE = "06610";
+    // Supporting both the old one and the new one requested (12345)
+    const ADMIN_CODES = ["06610", "12345"];
 
-    if (code === ADMIN_CODE) {
+    if (ADMIN_CODES.includes(code)) {
+      console.log("Admin code detected");
       return res.json({ role: "admin", success: true });
-    } else {
-      // For any other code, it's a success but role is normal user
+    } else if (code && code.length === 5) {
+      console.log("User code accepted");
       return res.json({ role: "user", success: true });
+    } else {
+      console.log("Invalid code format");
+      return res.status(400).json({ success: false, message: "Code invalide" });
     }
   });
 
