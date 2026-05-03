@@ -74,12 +74,9 @@ export default function RegistrationPage({ onComplete, theme }: RegistrationPage
             </div>
           </div>
 
-          <div className="mb-8 p-4 bg-green-50 dark:bg-green-900/20 rounded-2xl border border-green-100 dark:border-green-800/30 flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5 text-green-500" />
-            <div className="flex-1">
-              <p className="text-[10px] font-black text-green-600 dark:text-green-400 uppercase tracking-widest">Identité Vérifiée</p>
-              <p className="text-xs font-bold text-gray-700 dark:text-gray-200">{auth.currentUser?.email}</p>
-            </div>
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Inscription</h1>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Étape {step === 1 ? '1 : Profil' : '2 : Informations'}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">

@@ -23,6 +23,11 @@ export default function App() {
   const [firebaseStatus, setFirebaseStatus] = useState<'testing' | 'success' | 'failed'>('testing');
   const [isAuthReady, setIsAuthReady] = useState(false);
 
+  const [activeView, setActiveView] = useState<View>('login');
+  const [sessionRole, setSessionRole] = useState<'admin' | 'user' | null>(null);
+
+  const [adminViewingUser, setAdminViewingUser] = useState<UserData | null>(null);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log("onAuthStateChanged: user =", user?.email);
@@ -32,6 +37,7 @@ export default function App() {
         // Handle Admin auto-redirect
         if (user.email === 'filantmael225@gmail.com') {
           console.log("Admin detected, redirecting to admin dashboard");
+          setSessionRole('admin');
           setActiveView('admin');
           return;
         }
@@ -47,9 +53,11 @@ export default function App() {
             const data = userSnap.data() as UserData;
             setUserData(data);
             setActiveView('dashboard');
+            setSessionRole('user');
           } else {
             console.log("No profile found, redirecting to registration");
             setActiveView('registration');
+            setSessionRole('user');
           }
 
           // Always sync basic info
@@ -63,15 +71,26 @@ export default function App() {
           console.error("Error in onAuthStateChanged profile sync:", e);
           // Fallback to registration if sync fails but user is logged in
           setActiveView('registration');
+          setSessionRole('user');
         }
       } else {
         console.log("No user logged in, showing login page");
         setActiveView('login');
         setUserData(null);
+        setSessionRole(null);
       }
     });
     return () => unsubscribe();
   }, []);
+
+  const handleAccessGranted = (role: 'admin' | 'user') => {
+    setSessionRole(role);
+    if (role === 'admin') {
+      setActiveView('admin');
+    } else {
+      setActiveView('registration');
+    }
+  };
 
   useEffect(() => {
     async function checkFirebase() {
@@ -80,6 +99,7 @@ export default function App() {
     }
     checkFirebase();
   }, []);
+
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('filant225_theme');
     return (saved as 'light' | 'dark') || 'light';
@@ -94,10 +114,6 @@ export default function App() {
     const saved = localStorage.getItem('filant225_notifications');
     return saved ? JSON.parse(saved) : [];
   });
-
-  const [activeView, setActiveView] = useState<View>('login');
-
-  const [adminViewingUser, setAdminViewingUser] = useState<UserData | null>(null);
 
   useEffect(() => {
     localStorage.setItem('filant225_theme', theme);
@@ -195,9 +211,10 @@ export default function App() {
   const handleLogout = useCallback(() => {
     setUserData(null);
     setNotifications([]);
+    setSessionRole(null);
     localStorage.removeItem('filant225_user');
     localStorage.removeItem('filant225_notifications');
-    setActiveView('registration');
+    setActiveView('login');
   }, []);
 
   const handlePaymentSuccess = useCallback(async () => {
@@ -260,13 +277,7 @@ export default function App() {
         <AnimatePresence mode="wait">
         {activeView === 'login' && (
           <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <LoginPage onLoginSuccess={(user) => {
-               if (user.email === 'filantmael225@gmail.com') {
-                 setActiveView('admin');
-               } else {
-                 setActiveView('registration');
-               }
-            }} />
+            <LoginPage onAccessGranted={handleAccessGranted} />
           </motion.div>
         )}
 
@@ -276,7 +287,7 @@ export default function App() {
           </motion.div>
         )}
         
-        {(auth.currentUser?.email === 'filantmael225@gmail.com') ? (
+        {sessionRole === 'admin' ? (
           <motion.div 
             key="admin-root" 
             initial={{ opacity: 0 }} 
@@ -314,14 +325,18 @@ export default function App() {
             {/* Admin Logout Button */}
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2">
               <button 
-                onClick={() => auth.signOut()}
+                onClick={() => {
+                  setSessionRole(null);
+                  setActiveView('login');
+                  auth.signOut();
+                }}
                 className="bg-red-500 text-white px-8 py-3 rounded-full font-black uppercase tracking-widest leading-none shadow-xl shadow-red-500/20 active:scale-95 transition-all text-[10px]"
               >
-                Déconnexion Admin
+                Déconnexion
               </button>
             </div>
           </motion.div>
-        ) : userData && (
+        ) : (userData && ['dashboard', 'profile', 'notifications', 'chat', 'payment', 'missions', 'localisation'].includes(activeView)) && (
           <>
             <motion.div 
               key={activeView} 
