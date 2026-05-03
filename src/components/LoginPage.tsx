@@ -13,17 +13,39 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const [error, setError] = useState<string | null>(null);
 
   const handleGoogleLogin = async () => {
+    if (isLoggingIn) return;
     setIsLoggingIn(true);
     setError(null);
-    const provider = new GoogleAuthProvider();
+    
     try {
+      console.log("Starting Google Login...");
+      const provider = new GoogleAuthProvider();
+      // Force account selection to avoid automatic "connection failed" on some browsers
+      provider.setCustomParameters({ prompt: 'select_account' });
+      
       const result = await signInWithPopup(auth, provider);
+      console.log("Login result:", result.user?.email);
+      
       if (result.user) {
+        // Redirection should be handled by App.tsx through onAuthStateChanged
+        // but we call the callback just in case
         onLoginSuccess(result.user);
       }
     } catch (error: any) {
-      console.error("Login failed:", error);
-      setError("La connexion a échoué. Veuillez réessayer.");
+      console.error("Firebase Login Detailed Error:", error);
+      
+      let message = "La connexion a échoué.";
+      if (error.code === 'auth/popup-blocked') {
+        message = "La fenêtre de connexion a été bloquée par votre navigateur. Veuillez autoriser les popups.";
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        message = "La fenêtre de connexion a été fermée avant la fin.";
+      } else if (error.code === 'auth/unauthorised-domain') {
+        message = "Ce domaine n'est pas autorisé dans la console Firebase.";
+      } else if (error.message) {
+        message = `Erreur: ${error.message}`;
+      }
+      
+      setError(message);
     } finally {
       setIsLoggingIn(false);
     }

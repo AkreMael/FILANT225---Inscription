@@ -25,40 +25,49 @@ export default function App() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log("onAuthStateChanged: user =", user?.email);
       setIsAuthReady(true);
+      
       if (user) {
-        console.log("Firebase Auth: signed in as", user.email);
-        
-        // Admin auto-redirect
+        // Handle Admin auto-redirect
         if (user.email === 'filantmael225@gmail.com') {
+          console.log("Admin detected, redirecting to admin dashboard");
           setActiveView('admin');
-        } else {
-          // Check if user already has a profile
-          try {
-            const userRef = doc(db, 'users', user.uid);
-            const userSnap = await getDoc(userRef);
-            
-            if (userSnap.exists() && userSnap.data().profileType) {
-              setUserData(userSnap.data() as UserData);
-              setActiveView('dashboard');
-            } else {
-              setActiveView('registration');
-            }
+          return;
+        }
 
-            // Sync basic info
-            await setDoc(userRef, {
-              email: user.email,
-              displayName: user.displayName,
-              photoURL: user.photoURL,
-              lastLogin: serverTimestamp(),
-            }, { merge: true });
-          } catch (e) {
-            console.error("Error auto-syncing user to DB:", e);
+        // Check if user already has a profile
+        try {
+          console.log("Checking Firestore for existing profile for UID:", user.uid);
+          const userRef = doc(db, 'users', user.uid);
+          const userSnap = await getDoc(userRef);
+          
+          if (userSnap.exists() && userSnap.data().profileType) {
+            console.log("Existing profile found, redirecting to dashboard");
+            const data = userSnap.data() as UserData;
+            setUserData(data);
+            setActiveView('dashboard');
+          } else {
+            console.log("No profile found, redirecting to registration");
+            setActiveView('registration');
           }
+
+          // Always sync basic info
+          await setDoc(userRef, {
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            lastLogin: serverTimestamp(),
+          }, { merge: true });
+        } catch (e) {
+          console.error("Error in onAuthStateChanged profile sync:", e);
+          // Fallback to registration if sync fails but user is logged in
+          setActiveView('registration');
         }
       } else {
-        console.log("Firebase Auth: signed out");
+        console.log("No user logged in, showing login page");
         setActiveView('login');
+        setUserData(null);
       }
     });
     return () => unsubscribe();
