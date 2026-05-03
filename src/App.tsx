@@ -360,16 +360,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Firebase Status Pulse (Bottom Right) */}
-      <div className="fixed bottom-20 right-4 z-[9999] flex items-center gap-2 px-3 py-1.5 bg-black/80 rounded-full border border-white/10 backdrop-blur-sm pointer-events-none">
-        <div className={`w-2 h-2 rounded-full animate-pulse ${
-          firebaseStatus === 'success' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 
-          firebaseStatus === 'failed' ? 'bg-red-500' : 'bg-brand-orange'
-        }`} />
-        <span className="text-[10px] font-black text-white/50 tracking-tighter uppercase">
-          FB DB: {firebaseStatus === 'success' ? 'CONNECTED' : firebaseStatus === 'failed' ? 'ERROR' : 'SYNCING'}
-        </span>
-      </div>
     </div>
   );
 }
