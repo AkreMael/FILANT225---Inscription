@@ -207,7 +207,11 @@ export default function ProfilePanel({ userData, onBack, onLogout, onUpdateUser 
           </div>
           
           <h2 className="text-2xl font-black mt-6 text-gray-900 dark:text-white uppercase tracking-tighter font-display leading-none text-center">
-            {userData.details?.['Nom utilisateur'] || userData.details?.['Nom'] || 'UTILISATEUR'}
+            {userData.details?.['Nom utilisateur'] || 
+             userData.details?.['Nom'] || 
+             userData.details?.['Nom de l’entreprise'] || 
+             userData.details?.['Nom de l’agence'] || 
+             'UTILISATEUR'}
           </h2>
           
           <button 

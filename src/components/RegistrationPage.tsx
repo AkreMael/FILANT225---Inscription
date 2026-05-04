@@ -148,9 +148,9 @@ export default function RegistrationPage({ onComplete, theme }: RegistrationPage
                     Qui êtes-vous ?
                   </label>
                   <div className="grid grid-cols-1 gap-3">
-                    {(Object.keys(PROFILE_LABELS) as ProfileType[]).filter(type => type !== 'client').map((type) => (
+                    {(Object.keys(PROFILE_LABELS) as ProfileType[]).filter(type => type !== 'client').map((type, idx) => (
                       <button
-                        key={type}
+                        key={`${type}-${idx}`}
                         type="button"
                         onClick={() => setProfileType(type)}
                         className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left ${

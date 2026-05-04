@@ -24,7 +24,10 @@ export default function App() {
   const [isAuthReady, setIsAuthReady] = useState(false);
 
   const [activeView, setActiveView] = useState<View>('registration');
-  const [sessionRole, setSessionRole] = useState<'admin' | 'user' | null>(null);
+  const [sessionRole, setSessionRole] = useState<'admin' | 'user' | null>(() => {
+    const saved = localStorage.getItem('filant225_role');
+    return (saved as 'admin' | 'user') || null;
+  });
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
   const [adminCode, setAdminCode] = useState('');
   const [adminError, setAdminError] = useState<string | null>(null);
@@ -32,13 +35,21 @@ export default function App() {
   const [adminViewingUser, setAdminViewingUser] = useState<any | null>(null);
 
   useEffect(() => {
+    if (sessionRole) {
+      localStorage.setItem('filant225_role', sessionRole);
+    } else {
+      localStorage.removeItem('filant225_role');
+    }
+  }, [sessionRole]);
+
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log("onAuthStateChanged: user =", user?.email || (user?.isAnonymous ? 'Anonymous' : 'None'), "UID =", user?.uid);
       
       if (user) {
-        // Admin detection
-        if (user.email === 'filantmael225@gmail.com' || sessionRole === 'admin') {
-          console.log("Admin detected, redirecting to admin dashboard");
+        // Admin detection by EMAIL (Master Admin)
+        if (user.email === 'filantmael225@gmail.com') {
+          console.log("Master Admin detected by email");
           setSessionRole('admin');
           setActiveView('admin');
           setIsAuthReady(true);
@@ -52,28 +63,39 @@ export default function App() {
           
           if (userSnap.exists()) {
             const data = userSnap.data() as UserData;
-            // Only consider profile complete if details exists
+            console.log("User data found in Firestore:", data.profileType);
+            
+            // Check if profile is complete (has details)
             if (data.details && Object.keys(data.details).length > 0) {
               setUserData(data);
               setSessionRole('user');
-              if (activeView === 'registration') {
+              // Only redirect to dashboard if we are on registration and not admin
+              if (activeView === 'registration' && sessionRole !== 'admin') {
                 setActiveView('dashboard');
               }
             } else {
+              console.log("Profile incomplete, staying on registration");
+              setUserData(null);
+              // Don't force registration if we are currently admin
+              if (sessionRole !== 'admin') setActiveView('registration');
+            }
+          } else {
+            console.log("No user document in Firestore");
+            // If we are admin, we don't care about the user doc
+            if (sessionRole !== 'admin') {
               setActiveView('registration');
               setUserData(null);
             }
-          } else {
-            setActiveView('registration');
-            setUserData(null);
           }
 
-          // Sync basic info quietly
-          await setDoc(userRef, {
-            email: user.email || 'Anonyme',
-            displayName: user.displayName || 'Utilisateur',
-            lastLogin: serverTimestamp(),
-          }, { merge: true });
+          // Quietly update last login ONLY if not admin
+          if (sessionRole !== 'admin') {
+            await setDoc(userRef, {
+              email: user.email || 'Anonyme',
+              displayName: user.displayName || 'Utilisateur',
+              lastLogin: serverTimestamp(),
+            }, { merge: true });
+          }
         } catch (e) {
           console.error("Error in onAuthStateChanged profile sync:", e);
         } finally {
@@ -91,9 +113,13 @@ export default function App() {
           setIsCheckingProfile(false);
         }
         
-        setActiveView('registration');
-        setUserData(null);
-        setSessionRole(null);
+        // We only reset state if NOT currently logged in (handled by onAuthStateChanged)
+        // But if user is null after signOut, we must reset
+        if (!auth.currentUser) {
+          setActiveView('registration');
+          setUserData(null);
+          setSessionRole(null);
+        }
       }
     });
     return () => unsubscribe();
@@ -112,6 +138,7 @@ export default function App() {
       const result = await response.json();
       if (result.success) {
         setSessionRole('admin');
+        localStorage.setItem('filant225_role', 'admin');
         setActiveView('admin');
         setIsAdminLoginOpen(false);
         setAdminCode('');
@@ -239,58 +266,54 @@ export default function App() {
   }, [syncUserData]);
 
   const handleRegistrationComplete = useCallback(async (data: { profileType: any; details: Record<string, string> }) => {
+    // 1. Prepare data
     const newUser: UserData = { 
       ...data, 
       isActivated: false, 
       missions: [
-        { id: 1, title: 'Plomberie', category: 'plomberie', date: '15/04/2026', status: 'terminée' },
-        { id: 2, title: 'Magasin centre-ville', category: 'immobilier', date: '16/04/2026', status: 'terminée' },
-        { id: 3, title: 'Bétonnière', category: 'equipement', date: '17/04/2026', status: 'en cours' }
+        { id: 1, title: 'Bienvenue', category: 'autre', date: new Date().toLocaleDateString('fr-FR'), status: 'terminée' }
       ],
       isAvailable: true,
       theme,
       createdAt: new Date().toISOString()
     };
     
-    // Save to Firestore automatically
+    // 2. Immediate UI feedback (Optimistic)
+    setUserData(newUser);
+    setSessionRole('user');
+    setActiveView('dashboard');
+    addNotification('Bienvenue', 'Votre inscription a été validée avec succès.', 'success');
+
+    // 3. Save to Firestore
     try {
       const user = auth.currentUser;
       if (user) {
         const userRef = doc(db, 'users', user.uid);
         console.log("Saving user profile to Firestore for UID:", user.uid);
+        
+        // Wait for save to complete
         await setDoc(userRef, {
           ...newUser,
           uid: user.uid,
           updatedAt: serverTimestamp(),
         }, { merge: true });
-        console.log("Profile saved successfully.");
         
-        // ONLY AFTER SUCCESSFUL SAVE, we update state and navigate
-        setUserData(newUser);
-        addNotification('Bienvenue', 'Votre inscription a été validée avec succès.', 'success');
-        setActiveView('dashboard');
-        setSessionRole('user');
+        console.log("Profile saved successfully to Firebase.");
 
-        // Record registration/login in activity log
-        try {
-          await addDoc(collection(db, 'logins'), {
-            phoneNumber: newUser.details?.phoneNumber || newUser.details?.phone || 'N/A',
-            timestamp: serverTimestamp(),
-            role: 'user',
-            uid: user.uid
-          });
-        } catch (e) {
-          console.error("Error recording user activity:", e);
-        }
+        // 4. Activity log
+        await addDoc(collection(db, 'logins'), {
+          phoneNumber: newUser.details?.phoneNumber || newUser.details?.phone || (newUser.details?.['Numéro de téléphone']) || 'N/A',
+          timestamp: serverTimestamp(),
+          role: 'user',
+          uid: user.uid
+        });
       } else {
-        console.warn("No Firebase user found. Authentication required before saving to DB.");
-        alert("Erreur: Authentification requise. Veuillez réessayer.");
+        console.error("No Firebase user found during registration save.");
       }
     } catch (e) {
-      console.error("Error saving user to DB:", e);
-      alert("Une erreur est survenue lors de l'enregistrement de votre profil. Veuillez réessayer.");
+      console.error("CRITICAL: Error saving user to DB:", e);
     }
-  }, [addNotification, theme]);
+  }, [addNotification, theme, syncUserData]);
 
   const handleLogout = useCallback(() => {
     setUserData(null);

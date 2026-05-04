@@ -225,7 +225,7 @@ export default function AdminPage({ onBack, onViewMissions }: AdminPageProps) {
           </div>
         ) : (
           activeTab === 'users' ? (
-          <div className="grid gap-6">
+          <div key="users-tab" className="grid gap-6">
             {filteredUsers.map((user, idx) => (
               <motion.div
                 key={`${user.id}-${idx}`}
@@ -254,7 +254,11 @@ export default function AdminPage({ onBack, onViewMissions }: AdminPageProps) {
                         )}
                       </div>
                       <h3 className="font-black text-gray-900 dark:text-white text-lg leading-tight">
-                        {user.details?.firstName || user.details?.Nom ||'Sans Nom'} {user.details?.lastName || ''}
+                        {user.details?.['Nom utilisateur'] || 
+                         user.details?.['Nom'] || 
+                         user.details?.['Nom de l’entreprise'] || 
+                         user.details?.['Nom de l’agence'] || 
+                         'Sans Nom'}
                       </h3>
                       <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">
                         ID: {user.id.slice(0, 12)}...
@@ -319,7 +323,7 @@ export default function AdminPage({ onBack, onViewMissions }: AdminPageProps) {
             ))}
           </div>
         ) : (
-          <div className="space-y-3 pb-20">
+          <div key="logins-tab" className="space-y-3 pb-20">
              {filteredLogins.map((login, idx) => (
                <motion.div
                  key={`${login.id}-${idx}`}
