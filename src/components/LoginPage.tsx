@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { ShieldCheck, Lock, CheckCircle2 } from 'lucide-react';
+import { auth } from '../lib/firebase';
+import { signInAnonymously } from 'firebase/auth';
 
 interface LoginPageProps {
   onAccessGranted: (role: 'admin' | 'user') => void;
@@ -37,8 +39,6 @@ export default function LoginPage({ onAccessGranted }: LoginPageProps) {
         body: JSON.stringify({ code })
       });
       
-      console.log("Server response status:", response.status);
-      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Erreur serveur (${response.status})`);
@@ -48,13 +48,21 @@ export default function LoginPage({ onAccessGranted }: LoginPageProps) {
       console.log("Server verification result:", result);
       
       if (result.success) {
+        // Automatically sign in anonymously if it's a valid code
+        // This gives us a Firebase UID even without Google login
+        try {
+          await signInAnonymously(auth);
+          console.log("Signed in anonymously for data persistence");
+        } catch (authErr) {
+          console.warn("Anonymous sign-in failed, continuing as guest:", authErr);
+        }
+        
         onAccessGranted(result.role);
       } else {
         setError(result.message || "Code invalide.");
       }
     } catch (err: any) {
       console.error("Verification error details:", err);
-      // If it's a network error, tell the user to check their connection
       if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
         setError("Impossible de contacter le serveur. Veuillez vérifier votre connexion internet.");
       } else {

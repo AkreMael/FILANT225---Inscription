@@ -30,58 +30,64 @@ export default function App() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log("onAuthStateChanged: user =", user?.email);
+      console.log("onAuthStateChanged: user =", user?.email || (user?.isAnonymous ? 'Anonymous' : 'None'), "UID =", user?.uid);
       setIsAuthReady(true);
       
       if (user) {
-        // Handle Admin auto-redirect
+        // Handle Admin auto-redirect by email (for Google Auth users)
         if (user.email === 'filantmael225@gmail.com') {
-          console.log("Admin detected, redirecting to admin dashboard");
+          console.log("Admin detected by email, redirecting to admin dashboard");
           setSessionRole('admin');
           setActiveView('admin');
           return;
         }
 
-        // Check if user already has a profile
+        // Check if user already has a profile (works for anonymous and Google auth)
         try {
           console.log("Checking Firestore for existing profile for UID:", user.uid);
           const userRef = doc(db, 'users', user.uid);
           const userSnap = await getDoc(userRef);
           
-          if (userSnap.exists() && userSnap.data().profileType) {
-            console.log("Existing profile found, redirecting to dashboard");
+          if (userSnap.exists()) {
             const data = userSnap.data() as UserData;
+            console.log("Existing profile found:", data.profileType);
             setUserData(data);
-            setActiveView('dashboard');
+            
+            // If they have a profile, they are a 'user' session
             setSessionRole('user');
+            
+            // Only redirect if they are not currently in a specific view or admin
+            if (activeView === 'login' || activeView === 'registration') {
+               setActiveView('dashboard');
+            }
           } else {
-            console.log("No profile found, redirecting to registration");
-            setActiveView('registration');
-            setSessionRole('user');
+            console.log("No profile found for UID:", user.uid);
+            // If logged in but no profile, they need to register
+            if (activeView === 'login') {
+              setActiveView('registration');
+            }
           }
 
-          // Always sync basic info
+          // Sync basic info
           await setDoc(userRef, {
-            email: user.email,
-            displayName: user.displayName,
-            photoURL: user.photoURL,
+            email: user.email || 'Anonyme',
+            displayName: user.displayName || 'Utilisateur',
             lastLogin: serverTimestamp(),
           }, { merge: true });
         } catch (e) {
           console.error("Error in onAuthStateChanged profile sync:", e);
-          // Fallback to registration if sync fails but user is logged in
-          setActiveView('registration');
-          setSessionRole('user');
         }
       } else {
         console.log("No user logged in, showing login page");
-        setActiveView('login');
+        if (activeView !== 'login') {
+          setActiveView('login');
+        }
         setUserData(null);
         setSessionRole(null);
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [activeView]);
 
   const handleAccessGranted = (role: 'admin' | 'user') => {
     setSessionRole(role);
@@ -143,6 +149,23 @@ export default function App() {
     setNotifications(prev => [newNotif, ...prev]);
   }, []);
 
+  const syncUserData = useCallback(async (data: UserData) => {
+    const user = auth.currentUser;
+    if (user) {
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        await setDoc(userRef, {
+          ...data,
+          uid: user.uid,
+          updatedAt: serverTimestamp(),
+        }, { merge: true });
+        console.log("Firestore sync successful for UID:", user.uid);
+      } catch (e) {
+        console.error("Firestore sync failed:", e);
+      }
+    }
+  }, []);
+
   const addMission = useCallback((title: string, category: Mission['category'] = 'autre') => {
     setUserData(prev => {
       if (!prev) return null;
@@ -153,23 +176,30 @@ export default function App() {
         date: new Date().toLocaleDateString('fr-FR'),
         status: 'en cours'
       };
-      return { ...prev, missions: [newMission, ...prev.missions] };
+      const updated = { ...prev, missions: [newMission, ...prev.missions] };
+      syncUserData(updated); // Sync to Firestore
+      return updated;
     });
     addNotification('Nouvelle mission', `La mission "${title}" a été ajoutée à votre historique.`, 'info');
-  }, [addNotification]);
+  }, [addNotification, syncUserData]);
 
   const markNotificationsAsRead = useCallback(() => {
     setNotifications(prev => {
       const hasUnread = prev.some(n => !n.read);
-      if (!hasUnread) return prev; // Avoid unnecessary re-render if nothing changes
+      if (!hasUnread) return prev;
       return prev.map(n => ({ ...n, read: true }));
     });
   }, []);
 
   const handleUpdateUser = useCallback((updates: Partial<UserData>) => {
     if (updates.theme) setTheme(updates.theme as 'light' | 'dark');
-    setUserData(prev => prev ? { ...prev, ...updates } : null);
-  }, []);
+    setUserData(prev => {
+      if (!prev) return null;
+      const updated = { ...prev, ...updates };
+      syncUserData(updated); // Sync to Firestore
+      return updated;
+    });
+  }, [syncUserData]);
 
   const handleRegistrationComplete = useCallback(async (data: { profileType: any; details: Record<string, string> }) => {
     const newUser: UserData = { 
@@ -188,15 +218,17 @@ export default function App() {
     setUserData(newUser);
     addNotification('Bienvenue', 'Votre inscription a été validée avec succès.', 'success');
     setActiveView('dashboard');
+    setSessionRole('user');
 
     // Save to Firestore automatically
     try {
       const user = auth.currentUser;
       if (user) {
         const userRef = doc(db, 'users', user.uid);
-        console.log("Saving user profile to Firestore:", user.uid);
+        console.log("Saving user profile to Firestore for UID:", user.uid);
         await setDoc(userRef, {
           ...newUser,
+          uid: user.uid,
           updatedAt: serverTimestamp(),
         }, { merge: true });
         console.log("Profile saved successfully.");
