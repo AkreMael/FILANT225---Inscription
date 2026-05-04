@@ -10,14 +10,14 @@ import LocalisationPage from './components/LocalisationPage';
 import AdminPage from './components/AdminPage';
 import { db, auth } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, getDoc, addDoc, collection } from 'firebase/firestore';
 import { UserData, Notification, Mission } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 import { testFirebaseConnection } from './lib/firebase';
 import { Home, MessageSquare, ShieldCheck, MapPin, Lock, Phone, X } from 'lucide-react';
 import { signInAnonymously } from 'firebase/auth';
 
-export type View = 'registration' | 'dashboard' | 'profile' | 'notifications' | 'chat' | 'payment' | 'missions' | 'localisation' | 'admin';
+export type View = 'registration' | 'dashboard' | 'profile' | 'notifications' | 'chat' | 'payment' | 'missions' | 'localisation' | 'admin' | 'login';
 
 export default function App() {
   const [firebaseStatus, setFirebaseStatus] = useState<'testing' | 'success' | 'failed'>('testing');
@@ -26,7 +26,7 @@ export default function App() {
   const [activeView, setActiveView] = useState<View>('registration');
   const [sessionRole, setSessionRole] = useState<'admin' | 'user' | null>(null);
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
-  const [adminPhone, setAdminPhone] = useState('');
+  const [adminCode, setAdminCode] = useState('');
   const [adminError, setAdminError] = useState<string | null>(null);
   const [isAdminVerifying, setIsAdminVerifying] = useState(false);
   const [adminViewingUser, setAdminViewingUser] = useState<any | null>(null);
@@ -106,7 +106,7 @@ export default function App() {
       const response = await fetch('/api/admin-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: adminPhone })
+        body: JSON.stringify({ code: adminCode })
       });
       
       const result = await response.json();
@@ -114,7 +114,19 @@ export default function App() {
         setSessionRole('admin');
         setActiveView('admin');
         setIsAdminLoginOpen(false);
-        setAdminPhone('');
+        setAdminCode('');
+
+        // Record admin login in Firebase
+        try {
+          await addDoc(collection(db, 'logins'), {
+            phoneNumber: '0705052632',
+            timestamp: serverTimestamp(),
+            role: 'admin',
+            uid: auth.currentUser?.uid || 'unknown'
+          });
+        } catch (e) {
+          console.error("Error recording admin login:", e);
+        }
       } else {
         setAdminError(result.message || "Erreur de connexion");
       }
@@ -258,6 +270,18 @@ export default function App() {
         addNotification('Bienvenue', 'Votre inscription a été validée avec succès.', 'success');
         setActiveView('dashboard');
         setSessionRole('user');
+
+        // Record registration/login in activity log
+        try {
+          await addDoc(collection(db, 'logins'), {
+            phoneNumber: newUser.details?.phoneNumber || newUser.details?.phone || 'N/A',
+            timestamp: serverTimestamp(),
+            role: 'user',
+            uid: user.uid
+          });
+        } catch (e) {
+          console.error("Error recording user activity:", e);
+        }
       } else {
         console.warn("No Firebase user found. Authentication required before saving to DB.");
         alert("Erreur: Authentification requise. Veuillez réessayer.");
@@ -274,7 +298,8 @@ export default function App() {
     setSessionRole(null);
     localStorage.removeItem('filant225_user');
     localStorage.removeItem('filant225_notifications');
-    setActiveView('login');
+    setActiveView('registration');
+    auth.signOut();
   }, []);
 
   const handlePaymentSuccess = useCallback(async () => {
@@ -381,7 +406,7 @@ export default function App() {
               <button 
                 onClick={() => {
                   setSessionRole(null);
-                  setActiveView('login');
+                  setActiveView('registration');
                   auth.signOut();
                 }}
                 className="bg-red-500 text-white px-8 py-3 rounded-full font-black uppercase tracking-widest leading-none shadow-xl shadow-red-500/20 active:scale-95 transition-all text-[10px]"
@@ -548,15 +573,15 @@ export default function App() {
                 
                 <div className="space-y-4">
                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-gray-400 uppercase ml-4">Numéro Administrateur</label>
+                      <label className="text-[10px] font-black text-gray-400 uppercase ml-4">Code Secret Administrateur</label>
                       <div className="relative">
-                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
-                          type="tel"
-                          placeholder="0705052632"
-                          value={adminPhone}
-                          onChange={(e) => setAdminPhone(e.target.value)}
-                          className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-white/5 rounded-2xl py-4 pl-12 pr-4 text-sm font-black"
+                          type="password"
+                          placeholder="••••••••••"
+                          value={adminCode}
+                          onChange={(e) => setAdminCode(e.target.value)}
+                          className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-white/5 rounded-2xl py-4 pl-12 pr-4 text-sm font-black focus:border-brand-orange outline-none transition-all"
                         />
                       </div>
                    </div>

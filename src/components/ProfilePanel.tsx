@@ -61,8 +61,8 @@ export default function ProfilePanel({ userData, onBack, onLogout, onUpdateUser 
 
         <div className="space-y-4">
           <InfoItem label="Type de compte" value={PROFILE_LABELS[userData.profileType]} />
-          {Object.entries(userData.details || {}).map(([key, value]) => (
-            <div key={key}>
+          {Object.entries(userData.details || {}).map(([key, value], idx) => (
+            <div key={`${key}-${idx}`}>
               <InfoItem label={key} value={value} />
             </div>
           ))}

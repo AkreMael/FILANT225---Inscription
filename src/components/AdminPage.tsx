@@ -184,8 +184,8 @@ export default function AdminPage({ onBack, onViewMissions }: AdminPageProps) {
              </div>
              
              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-950">
-                {chatMessages.map((msg) => (
-                  <div key={msg.id} className={`flex ${msg.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
+                {chatMessages.map((msg, idx) => (
+                  <div key={`${msg.id}-${idx}`} className={`flex ${msg.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[80%] p-3 rounded-2xl text-xs font-medium shadow-sm ${msg.sender === 'admin' ? 'bg-brand-orange text-white rounded-tr-none' : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-tl-none'}`}>
                       {msg.text}
                     </div>
@@ -283,8 +283,8 @@ export default function AdminPage({ onBack, onViewMissions }: AdminPageProps) {
                          </span>
                       </div>
                    </div>
-                   {Object.entries(user.details || {}).map(([key, value]) => (
-                     <div key={key}>
+                   {Object.entries(user.details || {}).map(([key, value], dIdx) => (
+                     <div key={`${key}-${dIdx}`}>
                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{key}</p>
                        <p className="text-xs font-bold text-gray-700 dark:text-gray-200 truncate">{value || 'N/A'}</p>
                      </div>

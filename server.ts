@@ -23,18 +23,18 @@ async function startServer() {
 
   // API Route for admin login
   app.post("/api/admin-login", (req, res) => {
-    const { phoneNumber } = req.body;
-    console.log(`[ADMIN AUTH] Attempt: Phone=${phoneNumber}`);
+    const { code } = req.body;
+    console.log(`[ADMIN AUTH] Attempt with secret code`);
     
-    const ADMIN_PHONE = "0705052632";
-    const cleanPhone = phoneNumber ? phoneNumber.replace("+225", "").trim() : "";
+    const ADMIN_CODE = "0705052632";
+    const cleanCode = code ? String(code).trim() : "";
 
-    if (cleanPhone === ADMIN_PHONE) {
+    if (cleanCode === ADMIN_CODE) {
       console.log("[ADMIN AUTH] Admin access granted");
       return res.json({ role: "admin", success: true });
     } else {
-      console.log("[ADMIN AUTH] Access denied for phone:", cleanPhone);
-      return res.status(403).json({ success: false, message: "Numéro administrateur non reconnu." });
+      console.log("[ADMIN AUTH] Access denied");
+      return res.status(403).json({ success: false, message: "Code secret incorrect." });
     }
   });
 
