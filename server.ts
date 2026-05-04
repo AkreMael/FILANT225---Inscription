@@ -6,12 +6,25 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  console.log(`Starting server in ${process.env.NODE_ENV || 'development'} mode`);
+
   app.use(express.json());
+
+  // Request logger
+  app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+  });
+
+  // Health check
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", time: new Date().toISOString() });
+  });
 
   // API Route for code verification
   app.post("/api/verify-code", (req, res) => {
     const { code, phoneNumber } = req.body;
-    console.log(`Verifying: Phone=${phoneNumber}, Code=${code}`);
+    console.log(`[AUTH] Attempt: Phone=${phoneNumber}, Code=${code}`);
     
     // The secret code and phone requested by the user for admin
     const ADMIN_PHONE = "0705052632";
@@ -21,14 +34,14 @@ async function startServer() {
     const cleanPhone = phoneNumber ? phoneNumber.replace("+225", "").trim() : "";
 
     if (cleanPhone === ADMIN_PHONE && code === ADMIN_CODE) {
-      console.log("Admin login detected");
+      console.log("[AUTH] Admin access granted");
       return res.json({ role: "admin", success: true });
     } else if (cleanPhone.length === 10 && code && code.length === 5) {
-      console.log("User login accepted");
+      console.log("[AUTH] User access granted");
       return res.json({ role: "user", success: true });
     } else {
-      console.log("Invalid credentials format or values");
-      if (cleanPhone.length !== 10) {
+      console.log("[AUTH] Access denied: invalid format or values");
+      if (!cleanPhone || cleanPhone.length !== 10) {
         return res.status(400).json({ success: false, message: "Le numéro doit comporter 10 chiffres (Côte d'Ivoire)." });
       }
       return res.status(400).json({ success: false, message: "Informations invalides." });
