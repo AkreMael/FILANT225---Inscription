@@ -24,11 +24,13 @@ export default function Dashboard({ userData, onNavigate, unreadCount, onUpdateU
   const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', year: 'numeric' };
   const dateString = today.toLocaleDateString('fr-FR', options).toUpperCase();
   
+  const details = userData.details || {};
+  
   const qrDataString = [
-    `Nom: ${userData.details['Nom utilisateur'] || userData.details['Nom'] || 'N/A'}`,
-    `Ville: ${userData.details['Ville actuelle'] || userData.details['Ville'] || 'N/A'}`,
-    `Numéro: ${userData.details['Numéro de téléphone'] || userData.details['Téléphone'] || 'N/A'}`,
-    `Métier: ${userData.details['Métier'] || PROFILE_LABELS[userData.profileType]}`,
+    `Nom: ${details['Nom utilisateur'] || details['Nom'] || 'N/A'}`,
+    `Ville: ${details['Ville actuelle'] || details['Ville'] || 'N/A'}`,
+    `Numéro: ${details['Numéro de téléphone'] || details['Téléphone'] || 'N/A'}`,
+    `Métier: ${details['Métier'] || PROFILE_LABELS[userData.profileType]}`,
   ].join('\n');
 
   return (
@@ -122,9 +124,9 @@ export default function Dashboard({ userData, onNavigate, unreadCount, onUpdateU
             >
                <div className="relative w-full h-full rounded-2xl flex items-center justify-center overflow-hidden bg-white shadow-sm transition-colors">
                   <ClipboardCheck className="w-20 h-20 text-brand-orange" />
-                  {userData.missions.length > 0 && (
+                  {(userData.missions?.length || 0) > 0 && (
                      <div className="absolute top-2 right-2 bg-brand-red text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-                        {userData.missions.length}
+                        {userData.missions?.length}
                      </div>
                   )}
                </div>
@@ -215,23 +217,23 @@ export default function Dashboard({ userData, onNavigate, unreadCount, onUpdateU
                 </div>
                 
                 <div className="mt-8 px-6 space-y-4">
-                   <div className="space-y-1">
+                    <div className="space-y-1">
                       <p className="text-3xl font-black text-gray-900 leading-none font-display uppercase tracking-tighter">
-                        {userData.details['Nom utilisateur'] || userData.details['Nom'] || 'N/A'}
+                        {details['Nom utilisateur'] || details['Nom'] || 'N/A'}
                       </p>
                       <p className="text-brand-orange font-bold uppercase tracking-widest text-sm italic">
-                        {userData.details['Métier'] || PROFILE_LABELS[userData.profileType]}
+                        {details['Métier'] || PROFILE_LABELS[userData.profileType]}
                       </p>
                    </div>
                    
                    <div className="flex flex-col gap-2 pt-4 border-t border-gray-100">
                       <div className="flex items-center justify-center gap-2 text-gray-700 font-bold">
                          <MapPin className="w-4 h-4 text-brand-orange" />
-                         <span className="text-sm">{userData.details['Ville actuelle'] || userData.details['Ville'] || 'N/A'}</span>
+                         <span className="text-sm">{details['Ville actuelle'] || details['Ville'] || 'N/A'}</span>
                       </div>
                       <div className="flex items-center justify-center gap-2 text-gray-700 font-bold">
                          <Smartphone className="w-4 h-4 text-brand-orange" />
-                         <span className="text-sm">{userData.details['Numéro de téléphone'] || userData.details['Téléphone'] || 'N/A'}</span>
+                         <span className="text-sm">{details['Numéro de téléphone'] || details['Téléphone'] || 'N/A'}</span>
                       </div>
                    </div>
 

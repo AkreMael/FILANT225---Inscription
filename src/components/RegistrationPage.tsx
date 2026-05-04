@@ -153,14 +153,14 @@ export default function RegistrationPage({ onComplete, theme }: RegistrationPage
                       </label>
                       <div className="relative group">
                          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-brand-orange transition-colors">
-                            {field.toLowerCase().includes('téléphone') ? <Phone className="w-5 h-5" /> : 
-                             field.toLowerCase().includes('ville') ? <MapPin className="w-5 h-5" /> : 
+                            {(field || '').toLowerCase().includes('téléphone') ? <Phone className="w-5 h-5" /> : 
+                             (field || '').toLowerCase().includes('ville') ? <MapPin className="w-5 h-5" /> : 
                              <UserCircle className="w-5 h-5" />}
                          </div>
                         <input
                           required
-                          type={field.toLowerCase().includes('téléphone') ? 'tel' : 'text'}
-                          placeholder={`Entrez votre ${field.toLowerCase()}`}
+                          type={(field || '').toLowerCase().includes('téléphone') ? 'tel' : 'text'}
+                          placeholder={`Entrez votre ${(field || '').toLowerCase()}`}
                           value={details[field] || ''}
                           onChange={(e) => handleFieldChange(field, e.target.value)}
                           className="w-full bg-gray-50 dark:bg-gray-900/50 border-2 border-transparent focus:border-brand-orange rounded-2xl py-4 pl-12 pr-4 transition-all outline-none font-medium text-gray-800 dark:text-gray-200"

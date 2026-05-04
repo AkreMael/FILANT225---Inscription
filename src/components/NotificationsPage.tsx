@@ -30,12 +30,12 @@ export default function NotificationsPage({ notifications, onBack, onMarkAsRead,
         </button>
         <div className="flex flex-col">
           <h1 className="text-xl font-bold uppercase tracking-tight leading-none">Notifications</h1>
-          <span className="text-[10px] font-bold opacity-60 uppercase">{notifications.length} notification{notifications.length !== 1 ? 's' : ''}</span>
+          <span className="text-[10px] font-bold opacity-60 uppercase">{(notifications || []).length} notification{(notifications || []).length !== 1 ? 's' : ''}</span>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        {notifications.map((notif) => (
+        {(notifications || []).map((notif) => (
           <motion.div 
             key={notif.id} 
             initial={{ opacity: 0, x: -10 }}
@@ -59,7 +59,7 @@ export default function NotificationsPage({ notifications, onBack, onMarkAsRead,
           </motion.div>
         ))}
         
-        {notifications.length === 0 && (
+        {(notifications || []).length === 0 && (
           <div className="flex flex-col items-center justify-center h-full opacity-40 py-20">
              <div className="w-24 h-24 bg-gray-100 dark:bg-gray-900 rounded-full flex items-center justify-center mb-4">
                 <Bell className="w-12 h-12 text-gray-300 dark:text-gray-700" />

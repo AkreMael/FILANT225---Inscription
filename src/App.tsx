@@ -35,12 +35,16 @@ export default function App() {
       
       if (user) {
         // Handle Admin auto-redirect by email (for Google Auth users)
-        if (user.email === 'filantmael225@gmail.com') {
-          console.log("Admin detected by email, redirecting to admin dashboard");
+        // OR if sessionRole was already set to admin during this session
+        if (user.email === 'filantmael225@gmail.com' || sessionRole === 'admin') {
+          console.log("Admin detected, redirecting to admin dashboard");
           setSessionRole('admin');
           setActiveView('admin');
           return;
         }
+
+        // Check if user is a registered admin in Firestore (optional but better)
+        // For now, we rely on the login result and the email fallback.
 
         // Check if user already has a profile (works for anonymous and Google auth)
         try {
@@ -176,7 +180,7 @@ export default function App() {
         date: new Date().toLocaleDateString('fr-FR'),
         status: 'en cours'
       };
-      const updated = { ...prev, missions: [newMission, ...prev.missions] };
+      const updated = { ...prev, missions: [newMission, ...(prev.missions || [])] };
       syncUserData(updated); // Sync to Firestore
       return updated;
     });
@@ -278,7 +282,7 @@ export default function App() {
         console.error("Error updating activation status:", e);
       }
     }
-  }, [addNotification, addMission, userData?.profileType, userData?.details.email]);
+  }, [addNotification, addMission, userData?.profileType, userData?.details?.email]);
 
   const navigateToDashboard = useCallback(() => setActiveView('dashboard'), []);
   const navigateToNotifications = useCallback(() => setActiveView('notifications'), []);
@@ -294,7 +298,7 @@ export default function App() {
     addNotification('Nouveau message', 'Vous avez reçu un message de l\'assistance.', 'info');
   }, [addNotification]);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = (notifications || []).filter(n => !n.read).length;
 
   return (
     <div className={`min-h-screen overflow-x-hidden transition-colors duration-300 ${theme === 'dark' ? 'dark bg-gray-950' : 'bg-white'}`}>
@@ -474,7 +478,7 @@ export default function App() {
                   <MessageSquare className="w-5 h-5" />
                   <span className="text-[8px] font-black uppercase">Messages</span>
                 </button>
-                {auth.currentUser?.email === 'filantmael225@gmail.com' && (
+                {(auth.currentUser?.email === 'filantmael225@gmail.com' || sessionRole === 'admin') && (
                   <button 
                     onClick={() => setActiveView('admin')}
                     className={`flex flex-col items-center gap-1 p-2 rounded-2xl transition-all ${activeView === 'admin' ? 'text-brand-orange' : 'text-gray-400'}`}

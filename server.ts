@@ -10,24 +10,28 @@ async function startServer() {
 
   // API Route for code verification
   app.post("/api/verify-code", (req, res) => {
-    const { code } = req.body;
-    console.log(`Verifying code: ${code}`);
+    const { code, phoneNumber } = req.body;
+    console.log(`Verifying: Phone=${phoneNumber}, Code=${code}`);
     
-    // The secret code requested by the user
+    // The secret code and phone requested by the user for admin
+    const ADMIN_PHONE = "0705052632";
     const ADMIN_CODE = "06610";
 
-    if (code === ADMIN_CODE) {
-      console.log("Admin code detected");
+    // Clean phone number for comparison (remove prefix if present)
+    const cleanPhone = phoneNumber ? phoneNumber.replace("+225", "").trim() : "";
+
+    if (cleanPhone === ADMIN_PHONE && code === ADMIN_CODE) {
+      console.log("Admin login detected");
       return res.json({ role: "admin", success: true });
-    } else if (code === "00000") {
-      console.log("Forbidden user code detected");
-      return res.status(403).json({ success: false, message: "Ce code n'est pas autorisé." });
-    } else if (code && code.length === 5) {
-      console.log("User code accepted");
+    } else if (cleanPhone.length === 10 && code && code.length === 5) {
+      console.log("User login accepted");
       return res.json({ role: "user", success: true });
     } else {
-      console.log("Invalid code format");
-      return res.status(400).json({ success: false, message: "Code invalide" });
+      console.log("Invalid credentials format or values");
+      if (cleanPhone.length !== 10) {
+        return res.status(400).json({ success: false, message: "Le numéro doit comporter 10 chiffres (Côte d'Ivoire)." });
+      }
+      return res.status(400).json({ success: false, message: "Informations invalides." });
     }
   });
 

@@ -20,8 +20,8 @@ const STATUS_COLORS = {
   'annulée': 'bg-red-50 text-red-700 border-red-100',
 };
 
-export default function MissionsPage({ missions, onBack, theme }: MissionsPageProps) {
-  const completedMissions = missions.filter(m => m.status === 'terminée').length;
+export default function MissionsPage({ missions = [], onBack, theme }: MissionsPageProps) {
+  const completedMissions = (missions || []).filter(m => m.status === 'terminée').length;
 
   return (
     <div className={`min-h-[calc(100vh-80px)] flex flex-col overflow-hidden transition-colors duration-300`}>
@@ -47,14 +47,14 @@ export default function MissionsPage({ missions, onBack, theme }: MissionsPagePr
           <span className="text-xs font-bold uppercase tracking-wider">Total des missions</span>
         </div>
         <div className="text-3xl font-black text-brand-orange font-display">
-          {missions.length < 10 ? `0${missions.length}` : missions.length}
+          {(missions || []).length < 10 ? `0${(missions || []).length}` : (missions || []).length}
         </div>
       </div>
 
       {/* Content */}
       <div className={`flex-1 overflow-y-auto p-6 space-y-4 pb-24 ${theme === 'dark' ? 'bg-gray-950' : 'bg-gray-50'}`}>
-        {missions.length > 0 ? (
-          missions.map((mission, index) => (
+        {(missions || []).length > 0 ? (
+          (missions || []).map((mission, index) => (
             <motion.div
               key={mission.id}
               initial={{ opacity: 0, y: 20 }}
@@ -110,7 +110,7 @@ export default function MissionsPage({ missions, onBack, theme }: MissionsPagePr
         )}
 
         {/* Info Box */}
-        {missions.length > 0 && (
+        {(missions || []).length > 0 && (
           <div className="bg-blue-50 border border-blue-100 p-4 rounded-2xl flex gap-3 items-start">
             <CheckCircle2 className="w-5 h-5 text-blue-500 shrink-0" />
             <p className="text-xs text-blue-700 font-medium leading-relaxed">

@@ -1,12 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Users, Mail, Eye, Search, Filter, ShieldCheck, User as UserIcon } from 'lucide-react';
+import { Users, Mail, Eye, Search, ShieldCheck, User as UserIcon, Clock, LogIn } from 'lucide-react';
 import { db, auth } from '../lib/firebase';
-import { collection, onSnapshot, query, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, addDoc, serverTimestamp, orderBy, limit } from 'firebase/firestore';
 import { UserData } from '../types';
 
 interface AdminUser extends UserData {
   id: string;
+}
+
+interface LoginRecord {
+  id: string;
+  phoneNumber: string;
+  timestamp: any;
+  role: string;
+  uid: string;
 }
 
 interface AdminPageProps {
@@ -16,6 +24,8 @@ interface AdminPageProps {
 
 export default function AdminPage({ onBack, onViewMissions }: AdminPageProps) {
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [logins, setLogins] = useState<LoginRecord[]>([]);
+  const [activeTab, setActiveTab] = useState<'users' | 'logins'>('users');
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
@@ -26,9 +36,9 @@ export default function AdminPage({ onBack, onViewMissions }: AdminPageProps) {
       return;
     }
 
-    // Real-time synchronization
-    const q = query(collection(db, 'users'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    // Real-time synchronization for users
+    const usersQ = query(collection(db, 'users'));
+    const unsubscribeUsers = onSnapshot(usersQ, (snapshot) => {
       const usersData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -39,12 +49,23 @@ export default function AdminPage({ onBack, onViewMissions }: AdminPageProps) {
     }, (error) => {
       console.error("Admin user listener error:", error);
       setLoading(false);
-      if (error.code === 'permission-denied') {
-        setAccessDenied(true);
-      }
+      if (error.code === 'permission-denied') setAccessDenied(true);
     });
 
-    return () => unsubscribe();
+    // Real-time synchronization for logins
+    const loginsQ = query(collection(db, 'logins'), orderBy('timestamp', 'desc'), limit(50));
+    const unsubscribeLogins = onSnapshot(loginsQ, (snapshot) => {
+      const loginsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as LoginRecord[];
+      setLogins(loginsData);
+    });
+
+    return () => {
+      unsubscribeUsers();
+      unsubscribeLogins();
+    };
   }, []);
 
   const sendMessage = async (userId: string) => {
@@ -66,22 +87,29 @@ export default function AdminPage({ onBack, onViewMissions }: AdminPageProps) {
   };
 
   const filteredUsers = users.filter(user => 
-    Object.values(user.details || {}).some(val => String(val).toLowerCase().includes(searchTerm.toLowerCase())) ||
-    user.profileType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.id.includes(searchTerm)
+    Object.values(user.details || {}).some(val => String(val || '').toLowerCase().includes((searchTerm || '').toLowerCase())) ||
+    (user.profileType || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+    (user.id || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+    (user.details?.phoneNumber || '').includes(searchTerm)
+  );
+
+  const filteredLogins = logins.filter(login => 
+    login.phoneNumber.includes(searchTerm) || 
+    login.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    login.uid.includes(searchTerm)
   );
 
   return (
     <div className="min-h-[calc(100vh-80px)] bg-gray-50 dark:bg-gray-950 flex flex-col pb-20">
-      <header className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 p-6 sticky top-0 z-10">
+      <header className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 p-6 sticky top-0 z-10 shadow-sm">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-brand-orange/10 rounded-xl flex items-center justify-center">
               <ShieldCheck className="w-6 h-6 text-brand-orange" />
             </div>
             <div>
-              <h1 className="text-xl font-black text-gray-900 dark:text-white tracking-tight uppercase">Administration</h1>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Base de données en temps réel</p>
+              <h1 className="text-xl font-black text-gray-900 dark:text-white tracking-tight uppercase">Base de Données</h1>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Administration Filant 225</p>
             </div>
           </div>
           <button 
@@ -92,11 +120,28 @@ export default function AdminPage({ onBack, onViewMissions }: AdminPageProps) {
           </button>
         </div>
 
+        <div className="flex gap-4 mb-6">
+           <button 
+             onClick={() => setActiveTab('users')}
+             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all font-black uppercase text-[10px] tracking-widest ${activeTab === 'users' ? 'bg-brand-orange text-white overflow-hidden shadow-lg shadow-brand-orange/20' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}
+           >
+              <Users className="w-4 h-4" />
+              Comptes ({users.length})
+           </button>
+           <button 
+             onClick={() => setActiveTab('logins')}
+             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all font-black uppercase text-[10px] tracking-widest ${activeTab === 'logins' ? 'bg-brand-orange text-white overflow-hidden shadow-lg shadow-brand-orange/20' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}
+           >
+              <LogIn className="w-4 h-4" />
+              Connexions ({logins.length})
+           </button>
+        </div>
+
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input 
             type="text"
-            placeholder="Rechercher (nom, métier, ville, id)..."
+            placeholder={`Rechercher dans ${activeTab === 'users' ? 'les comptes' : 'les connexions'}...`}
             className="w-full bg-gray-100 dark:bg-gray-800 border-none rounded-2xl py-3 pl-11 pr-4 text-sm font-medium focus:ring-2 focus:ring-brand-orange transition-all dark:text-white"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -104,17 +149,11 @@ export default function AdminPage({ onBack, onViewMissions }: AdminPageProps) {
         </div>
       </header>
 
-      <main className="flex-1 p-4 space-y-4">
-        <div className="flex items-center justify-between mb-2">
-           <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-            <Users className="w-3 h-3" /> {filteredUsers.length} Comptes Enregistrés
-           </h2>
-        </div>
-
+      <main className="flex-1 p-4">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-8 h-8 border-4 border-brand-orange/20 border-t-brand-orange rounded-full animate-spin" />
-            <p className="text-[10px] font-black text-gray-400 uppercase">Synchronisation...</p>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Chargement...</p>
           </div>
         ) : accessDenied ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4 px-10 text-center">
@@ -129,6 +168,7 @@ export default function AdminPage({ onBack, onViewMissions }: AdminPageProps) {
             </div>
           </div>
         ) : (
+          activeTab === 'users' ? (
           <div className="grid gap-6">
             {filteredUsers.map((user) => (
               <motion.div
@@ -202,8 +242,42 @@ export default function AdminPage({ onBack, onViewMissions }: AdminPageProps) {
               </motion.div>
             ))}
           </div>
-        )}
-      </main>
+        ) : (
+          <div className="space-y-3 pb-20">
+             {filteredLogins.map((login) => (
+               <motion.div
+                 key={login.id}
+                 initial={{ opacity: 0, x: -10 }}
+                 animate={{ opacity: 1, x: 0 }}
+                 className="bg-white dark:bg-gray-900 p-4 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-800 flex items-center gap-4 text-left"
+               >
+                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${login.role === 'admin' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'}`}>
+                    <LogIn className="w-5 h-5" />
+                 </div>
+                 <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                       <p className="font-black text-gray-900 dark:text-white text-xs">{login.phoneNumber}</p>
+                       <span className={`text-[7px] font-black px-1.5 py-0.5 rounded uppercase ${login.role === 'admin' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
+                        {login.role}
+                       </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[9px] text-gray-400 font-bold uppercase tracking-widest">
+                       <Clock className="w-3 h-3" />
+                       {login.timestamp?.toDate ? login.timestamp.toDate().toLocaleString() : 'Récemment'}
+                    </div>
+                 </div>
+                 <div className="text-[8px] font-bold text-gray-300 dark:text-gray-700 uppercase">
+                    {login.uid.slice(0, 6)}
+                 </div>
+               </motion.div>
+             ))}
+             {filteredLogins.length === 0 && (
+               <div className="py-20 text-center opacity-40 font-bold uppercase text-[10px] tracking-widest">Aucune connexion enregistrée</div>
+             )}
+          </div>
+        )
+      )}
+    </main>
     </div>
   );
 }
