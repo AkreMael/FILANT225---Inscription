@@ -97,7 +97,7 @@ export default function LoginPage({ onAccessGranted }: LoginPageProps) {
               <input
                 type="password"
                 maxLength={5}
-                placeholder="Code à 5 chiffres"
+                placeholder="Entrer votre code à 5 chiffres"
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
                 className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl py-4 pl-12 pr-4 text-sm font-black tracking-[0.5em] focus:ring-2 focus:ring-brand-orange focus:border-transparent transition-all text-gray-900"
@@ -109,7 +109,7 @@ export default function LoginPage({ onAccessGranted }: LoginPageProps) {
               <input
                 type="password"
                 maxLength={5}
-                placeholder="Confirmer le code"
+                placeholder="Confirmer le code à 5 chiffres"
                 value={confirmCode}
                 onChange={(e) => setConfirmCode(e.target.value.replace(/\D/g, ''))}
                 className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl py-4 pl-12 pr-4 text-sm font-black tracking-[0.5em] focus:ring-2 focus:ring-brand-orange focus:border-transparent transition-all text-gray-900"

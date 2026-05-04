@@ -14,12 +14,14 @@ async function startServer() {
     console.log(`Verifying code: ${code}`);
     
     // The secret code requested by the user
-    // Supporting both the old one and the new one requested (12345)
-    const ADMIN_CODES = ["06610", "12345"];
+    const ADMIN_CODE = "06610";
 
-    if (ADMIN_CODES.includes(code)) {
+    if (code === ADMIN_CODE) {
       console.log("Admin code detected");
       return res.json({ role: "admin", success: true });
+    } else if (code === "00000") {
+      console.log("Forbidden user code detected");
+      return res.status(403).json({ success: false, message: "Ce code n'est pas autorisé." });
     } else if (code && code.length === 5) {
       console.log("User code accepted");
       return res.json({ role: "user", success: true });
