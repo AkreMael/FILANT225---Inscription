@@ -35,9 +35,9 @@ export default function NotificationsPage({ notifications, onBack, onMarkAsRead,
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        {(notifications || []).map((notif) => (
+        {(notifications || []).map((notif, idx) => (
           <motion.div 
-            key={notif.id} 
+            key={`${notif.id}-${idx}`} 
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             className={`flex gap-4 p-4 rounded-2xl border transition-colors ${

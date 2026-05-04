@@ -8,10 +8,13 @@ interface MissionsPageProps {
   theme: 'light' | 'dark';
 }
 
-const STATUS_ICONS = {
-  'terminée': <CheckCircle2 className="w-5 h-5 text-green-500" />,
-  'en cours': <Clock className="w-5 h-5 text-brand-orange" />,
-  'annulée': <XCircle className="w-5 h-5 text-red-500" />,
+const getStatusIcon = (status: Mission['status']) => {
+  switch (status) {
+    case 'terminée': return <CheckCircle2 className="w-5 h-5 text-green-500" />;
+    case 'en cours': return <Clock className="w-5 h-5 text-brand-orange" />;
+    case 'annulée': return <XCircle className="w-5 h-5 text-red-500" />;
+    default: return null;
+  }
 };
 
 const STATUS_COLORS = {
@@ -56,7 +59,7 @@ export default function MissionsPage({ missions = [], onBack, theme }: MissionsP
         {(missions || []).length > 0 ? (
           (missions || []).map((mission, index) => (
             <motion.div
-              key={mission.id}
+              key={`${mission.id}-${index}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
@@ -93,7 +96,7 @@ export default function MissionsPage({ missions = [], onBack, theme }: MissionsP
 
               <div className="flex justify-between items-center pt-2">
                 <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border flex items-center gap-1.5 ${STATUS_COLORS[mission.status]}`}>
-                  {STATUS_ICONS[mission.status]}
+                  {getStatusIcon(mission.status)}
                   {mission.status}
                 </div>
                 <button className="text-brand-orange text-[10px] font-black uppercase tracking-widest hover:underline px-2">

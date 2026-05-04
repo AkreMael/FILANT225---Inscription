@@ -19,10 +19,30 @@ const PROFILE_ICONS: Record<ProfileType, React.ReactNode> = {
 };
 
 export default function RegistrationPage({ onComplete, theme }: RegistrationPageProps) {
-  const [profileType, setProfileType] = useState<ProfileType>('client');
+  const [profileType, setProfileType] = useState<ProfileType>('travailleur');
   const [details, setDetails] = useState<Record<string, string>>({});
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0); // Changed to step 0 for location permission
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [locationPermission, setLocationPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
+
+  const requestLocation = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        () => {
+          setLocationPermission('granted');
+          setStep(1);
+        },
+        (error) => {
+          console.error("Location error:", error);
+          setLocationPermission('denied');
+          // Still proceed but we notified the user
+          setStep(1);
+        }
+      );
+    } else {
+      setStep(1);
+    }
+  };
 
   React.useEffect(() => {
     const user = auth.currentUser;
@@ -69,19 +89,54 @@ export default function RegistrationPage({ onComplete, theme }: RegistrationPage
           <div className="flex justify-between items-center mb-8 border-b border-gray-100 dark:border-gray-800 pb-4">
             <h2 className="text-xl font-bold text-gray-800 dark:text-white">Connexion rapide</h2>
             <div className="flex gap-1">
-              <div className={`h-1.5 w-8 rounded-full ${step === 1 ? 'bg-brand-orange' : 'bg-green-500'}`} />
-              <div className={`h-1.5 w-8 rounded-full ${step === 2 ? 'bg-brand-orange' : step > 2 ? 'bg-green-500' : 'bg-gray-100 dark:bg-gray-800'}`} />
+              <div className={`h-1.5 w-6 rounded-full ${step === 0 ? 'bg-brand-orange' : 'bg-green-500'}`} />
+              <div className={`h-1.5 w-6 rounded-full ${step === 1 ? 'bg-brand-orange' : step > 1 ? 'bg-green-500' : 'bg-gray-100 dark:bg-gray-800'}`} />
+              <div className={`h-1.5 w-6 rounded-full ${step === 2 ? 'bg-brand-orange' : step > 2 ? 'bg-green-500' : 'bg-gray-100 dark:bg-gray-800'}`} />
             </div>
           </div>
 
           <div className="text-center mb-8">
             <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Inscription</h1>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Étape {step === 1 ? '1 : Profil' : '2 : Informations'}</p>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+              {step === 0 ? 'Étape préliminaire : Permission' : step === 1 ? 'Étape 1 : Profil' : 'Étape 2 : Informations'}
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <AnimatePresence mode="wait">
-              {step === 1 ? (
+              {step === 0 ? (
+                <motion.div
+                  key="step0"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-6 text-center py-4"
+                >
+                  <div className="w-20 h-20 bg-brand-orange/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <MapPin className="w-10 h-10 text-brand-orange" />
+                  </div>
+                  <h3 className="text-xl font-black uppercase tracking-tight text-gray-900 dark:text-white">Géolocalisation</h3>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
+                    Pour vous proposer les meilleures missions et prestataires à proximité, nous avons besoin d'accéder à votre position.
+                  </p>
+                  <div className="space-y-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={requestLocation}
+                      className="w-full bg-brand-orange text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-brand-orange/20 active:scale-95 transition-all"
+                    >
+                      Autoriser l'accès
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      className="w-full text-gray-400 font-bold text-[10px] uppercase tracking-widest py-2"
+                    >
+                      Plus tard
+                    </button>
+                  </div>
+                </motion.div>
+              ) : step === 1 ? (
                 <motion.div
                   key="step1"
                   initial={{ x: 20, opacity: 0 }}
@@ -93,7 +148,7 @@ export default function RegistrationPage({ onComplete, theme }: RegistrationPage
                     Qui êtes-vous ?
                   </label>
                   <div className="grid grid-cols-1 gap-3">
-                    {(Object.keys(PROFILE_LABELS) as ProfileType[]).map((type) => (
+                    {(Object.keys(PROFILE_LABELS) as ProfileType[]).filter(type => type !== 'client').map((type) => (
                       <button
                         key={type}
                         type="button"
@@ -115,11 +170,7 @@ export default function RegistrationPage({ onComplete, theme }: RegistrationPage
                   <button
                     type="button"
                     onClick={() => {
-                      if (profileType === 'client') {
-                        window.location.href = 'https://filant225-a1.vercel.app/';
-                      } else {
-                        setStep(2);
-                      }
+                      setStep(2);
                     }}
                     className="w-full bg-brand-orange text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 mt-6 hover:bg-brand-dark-orange transition-colors"
                   >
@@ -146,8 +197,8 @@ export default function RegistrationPage({ onComplete, theme }: RegistrationPage
                     </button>
                   </div>
 
-                  {fields.map((field) => (
-                    <div key={field} className="relative">
+                  {fields.map((field, idx) => (
+                    <div key={`${field}-${idx}`} className="relative">
                       <label className="block text-sm font-semibold text-gray-500 mb-1 ml-1 capitalize">
                         {field}
                       </label>

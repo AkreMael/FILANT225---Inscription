@@ -21,30 +21,20 @@ async function startServer() {
     res.json({ status: "ok", time: new Date().toISOString() });
   });
 
-  // API Route for code verification
-  app.post("/api/verify-code", (req, res) => {
-    const { code, phoneNumber } = req.body;
-    console.log(`[AUTH] Attempt: Phone=${phoneNumber}, Code=${code}`);
+  // API Route for admin login
+  app.post("/api/admin-login", (req, res) => {
+    const { phoneNumber } = req.body;
+    console.log(`[ADMIN AUTH] Attempt: Phone=${phoneNumber}`);
     
-    // The secret code and phone requested by the user for admin
     const ADMIN_PHONE = "0705052632";
-    const ADMIN_CODE = "06610";
-
-    // Clean phone number for comparison (remove prefix if present)
     const cleanPhone = phoneNumber ? phoneNumber.replace("+225", "").trim() : "";
 
-    if (cleanPhone === ADMIN_PHONE && code === ADMIN_CODE) {
-      console.log("[AUTH] Admin access granted");
+    if (cleanPhone === ADMIN_PHONE) {
+      console.log("[ADMIN AUTH] Admin access granted");
       return res.json({ role: "admin", success: true });
-    } else if (cleanPhone.length === 10 && code && code.length === 5) {
-      console.log("[AUTH] User access granted");
-      return res.json({ role: "user", success: true });
     } else {
-      console.log("[AUTH] Access denied: invalid format or values");
-      if (!cleanPhone || cleanPhone.length !== 10) {
-        return res.status(400).json({ success: false, message: "Le numéro doit comporter 10 chiffres (Côte d'Ivoire)." });
-      }
-      return res.status(400).json({ success: false, message: "Informations invalides." });
+      console.log("[ADMIN AUTH] Access denied for phone:", cleanPhone);
+      return res.status(403).json({ success: false, message: "Numéro administrateur non reconnu." });
     }
   });
 

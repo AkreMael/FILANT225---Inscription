@@ -8,71 +8,67 @@ import PaymentPage from './components/PaymentPage';
 import MissionsPage from './components/MissionsPage';
 import LocalisationPage from './components/LocalisationPage';
 import AdminPage from './components/AdminPage';
-import LoginPage from './components/LoginPage';
 import { db, auth } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { UserData, Notification, Mission } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 import { testFirebaseConnection } from './lib/firebase';
-import { Home, MessageSquare, ShieldCheck, MapPin } from 'lucide-react';
+import { Home, MessageSquare, ShieldCheck, MapPin, Lock, Phone, X } from 'lucide-react';
+import { signInAnonymously } from 'firebase/auth';
 
-export type View = 'login' | 'registration' | 'dashboard' | 'profile' | 'notifications' | 'chat' | 'payment' | 'missions' | 'localisation' | 'admin';
+export type View = 'registration' | 'dashboard' | 'profile' | 'notifications' | 'chat' | 'payment' | 'missions' | 'localisation' | 'admin';
 
 export default function App() {
   const [firebaseStatus, setFirebaseStatus] = useState<'testing' | 'success' | 'failed'>('testing');
   const [isAuthReady, setIsAuthReady] = useState(false);
 
-  const [activeView, setActiveView] = useState<View>('login');
+  const [activeView, setActiveView] = useState<View>('registration');
   const [sessionRole, setSessionRole] = useState<'admin' | 'user' | null>(null);
-
-  const [adminViewingUser, setAdminViewingUser] = useState<UserData | null>(null);
+  const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
+  const [adminPhone, setAdminPhone] = useState('');
+  const [adminError, setAdminError] = useState<string | null>(null);
+  const [isAdminVerifying, setIsAdminVerifying] = useState(false);
+  const [adminViewingUser, setAdminViewingUser] = useState<any | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log("onAuthStateChanged: user =", user?.email || (user?.isAnonymous ? 'Anonymous' : 'None'), "UID =", user?.uid);
-      setIsAuthReady(true);
       
       if (user) {
-        // Handle Admin auto-redirect by email (for Google Auth users)
-        // OR if sessionRole was already set to admin during this session
+        // Admin detection
         if (user.email === 'filantmael225@gmail.com' || sessionRole === 'admin') {
           console.log("Admin detected, redirecting to admin dashboard");
           setSessionRole('admin');
           setActiveView('admin');
+          setIsAuthReady(true);
+          setIsCheckingProfile(false);
           return;
         }
 
-        // Check if user is a registered admin in Firestore (optional but better)
-        // For now, we rely on the login result and the email fallback.
-
-        // Check if user already has a profile (works for anonymous and Google auth)
         try {
-          console.log("Checking Firestore for existing profile for UID:", user.uid);
           const userRef = doc(db, 'users', user.uid);
           const userSnap = await getDoc(userRef);
           
           if (userSnap.exists()) {
             const data = userSnap.data() as UserData;
-            console.log("Existing profile found:", data.profileType);
-            setUserData(data);
-            
-            // If they have a profile, they are a 'user' session
-            setSessionRole('user');
-            
-            // Only redirect if they are not currently in a specific view or admin
-            if (activeView === 'login' || activeView === 'registration') {
-               setActiveView('dashboard');
+            // Only consider profile complete if details exists
+            if (data.details && Object.keys(data.details).length > 0) {
+              setUserData(data);
+              setSessionRole('user');
+              if (activeView === 'registration') {
+                setActiveView('dashboard');
+              }
+            } else {
+              setActiveView('registration');
+              setUserData(null);
             }
           } else {
-            console.log("No profile found for UID:", user.uid);
-            // If logged in but no profile, they need to register
-            if (activeView === 'login') {
-              setActiveView('registration');
-            }
+            setActiveView('registration');
+            setUserData(null);
           }
 
-          // Sync basic info
+          // Sync basic info quietly
           await setDoc(userRef, {
             email: user.email || 'Anonyme',
             displayName: user.displayName || 'Utilisateur',
@@ -80,25 +76,52 @@ export default function App() {
           }, { merge: true });
         } catch (e) {
           console.error("Error in onAuthStateChanged profile sync:", e);
+        } finally {
+          setIsAuthReady(true);
+          setIsCheckingProfile(false);
         }
       } else {
-        console.log("No user logged in, showing login page");
-        if (activeView !== 'login') {
-          setActiveView('login');
+        // Automatically sign in anonymously if not logged in
+        try {
+          console.log("Auto-signing in anonymously...");
+          await signInAnonymously(auth);
+        } catch (err) {
+          console.error("Auto sign-in failed:", err);
+          setIsAuthReady(true);
+          setIsCheckingProfile(false);
         }
+        
+        setActiveView('registration');
         setUserData(null);
         setSessionRole(null);
       }
     });
     return () => unsubscribe();
-  }, [activeView]);
+  }, [activeView, sessionRole]);
 
-  const handleAccessGranted = (role: 'admin' | 'user') => {
-    setSessionRole(role);
-    if (role === 'admin') {
-      setActiveView('admin');
-    } else {
-      setActiveView('registration');
+  const handleAdminLogin = async () => {
+    setIsAdminVerifying(true);
+    setAdminError(null);
+    try {
+      const response = await fetch('/api/admin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: adminPhone })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        setSessionRole('admin');
+        setActiveView('admin');
+        setIsAdminLoginOpen(false);
+        setAdminPhone('');
+      } else {
+        setAdminError(result.message || "Erreur de connexion");
+      }
+    } catch (err) {
+      setAdminError("Erreur serveur");
+    } finally {
+      setIsAdminVerifying(false);
     }
   };
 
@@ -115,10 +138,8 @@ export default function App() {
     return (saved as 'light' | 'dark') || 'light';
   });
 
-  const [userData, setUserData] = useState<UserData | null>(() => {
-    const saved = localStorage.getItem('filant225_user');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [isCheckingProfile, setIsCheckingProfile] = useState(true);
   
   const [notifications, setNotifications] = useState<Notification[]>(() => {
     const saved = localStorage.getItem('filant225_notifications');
@@ -143,7 +164,7 @@ export default function App() {
 
   const addNotification = useCallback((title: string, message: string, type: Notification['type'] = 'info') => {
     const newNotif: Notification = {
-      id: Date.now(),
+      id: Date.now() + Math.random(),
       title,
       message,
       time: 'À l\'instant',
@@ -219,11 +240,6 @@ export default function App() {
       createdAt: new Date().toISOString()
     };
     
-    setUserData(newUser);
-    addNotification('Bienvenue', 'Votre inscription a été validée avec succès.', 'success');
-    setActiveView('dashboard');
-    setSessionRole('user');
-
     // Save to Firestore automatically
     try {
       const user = auth.currentUser;
@@ -236,11 +252,19 @@ export default function App() {
           updatedAt: serverTimestamp(),
         }, { merge: true });
         console.log("Profile saved successfully.");
+        
+        // ONLY AFTER SUCCESSFUL SAVE, we update state and navigate
+        setUserData(newUser);
+        addNotification('Bienvenue', 'Votre inscription a été validée avec succès.', 'success');
+        setActiveView('dashboard');
+        setSessionRole('user');
       } else {
         console.warn("No Firebase user found. Authentication required before saving to DB.");
+        alert("Erreur: Authentification requise. Veuillez réessayer.");
       }
     } catch (e) {
       console.error("Error saving user to DB:", e);
+      alert("Une erreur est survenue lors de l'enregistrement de votre profil. Veuillez réessayer.");
     }
   }, [addNotification, theme]);
 
@@ -302,7 +326,7 @@ export default function App() {
 
   return (
     <div className={`min-h-screen overflow-x-hidden transition-colors duration-300 ${theme === 'dark' ? 'dark bg-gray-950' : 'bg-white'}`}>
-      {!isAuthReady ? (
+      {(!isAuthReady || isCheckingProfile) ? (
         <div className="min-h-screen flex items-center justify-center bg-brand-orange">
           <div className="flex flex-col items-center gap-4">
             <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin" />
@@ -311,12 +335,6 @@ export default function App() {
         </div>
       ) : (
         <AnimatePresence mode="wait">
-        {activeView === 'login' && (
-          <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <LoginPage onAccessGranted={handleAccessGranted} />
-          </motion.div>
-        )}
-
         {activeView === 'registration' && (
           <motion.div key="registration" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
              <RegistrationPage onComplete={handleRegistrationComplete} theme={theme} />
@@ -498,7 +516,68 @@ export default function App() {
             </div>
           </>
         )}
-      </AnimatePresence>
+        {/* Admin Secret Access Button */}
+        {sessionRole !== 'admin' && (
+          <button 
+            onClick={() => setIsAdminLoginOpen(true)}
+            className="fixed bottom-6 right-6 z-50 w-8 h-8 bg-black/5 dark:bg-white/5 backdrop-blur-sm rounded-full flex items-center justify-center text-gray-400 hover:text-brand-orange transition-all"
+            title="Admin access"
+          >
+            <Lock className="w-3 h-3" />
+          </button>
+        )}
+
+        {/* Admin Login Modal */}
+        <AnimatePresence>
+          {isAdminLoginOpen && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md"
+            >
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="bg-white dark:bg-gray-950 w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl space-y-6"
+              >
+                <div className="flex justify-between items-center">
+                   <h2 className="text-xl font-black uppercase text-brand-orange">Accès Admin</h2>
+                   <button onClick={() => setIsAdminLoginOpen(false)} className="text-gray-400"><X className="w-5 h-5" /></button>
+                </div>
+                
+                <div className="space-y-4">
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-black text-gray-400 uppercase ml-4">Numéro Administrateur</label>
+                      <div className="relative">
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                          type="tel"
+                          placeholder="0705052632"
+                          value={adminPhone}
+                          onChange={(e) => setAdminPhone(e.target.value)}
+                          className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-white/5 rounded-2xl py-4 pl-12 pr-4 text-sm font-black"
+                        />
+                      </div>
+                   </div>
+                   
+                   {adminError && (
+                     <p className="text-[10px] text-red-500 font-bold uppercase text-center">{adminError}</p>
+                   )}
+                   
+                   <button 
+                     onClick={handleAdminLogin}
+                     disabled={isAdminVerifying}
+                     className="w-full bg-brand-orange text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-brand-orange/20"
+                   >
+                     {isAdminVerifying ? "Vérification..." : "Se connecter"}
+                   </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        </AnimatePresence>
       )}
     </div>
   );

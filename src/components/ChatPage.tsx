@@ -115,9 +115,9 @@ export default function ChatPage({ userData, onBack, onNewMessage, theme }: Chat
         ref={scrollRef}
         className={`flex-1 overflow-y-auto p-4 space-y-4 ${theme === 'dark' ? 'bg-gray-950' : 'bg-gray-50'}`}
       >
-        {messages.map((msg) => (
+        {messages.map((msg, idx) => (
           <motion.div 
-            key={msg.id}
+            key={`${msg.id}-${idx}`}
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}

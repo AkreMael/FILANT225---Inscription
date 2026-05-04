@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Users, Mail, Eye, Search, ShieldCheck, User as UserIcon, Clock, LogIn } from 'lucide-react';
+import { Users, Mail, Eye, Search, ShieldCheck, User as UserIcon, Clock, LogIn, ChevronLeft, Send, Activity, MessageCircle } from 'lucide-react';
 import { db, auth } from '../lib/firebase';
-import { collection, onSnapshot, query, addDoc, serverTimestamp, orderBy, limit } from 'firebase/firestore';
+import { collection, onSnapshot, query, addDoc, serverTimestamp, orderBy, limit, where, getDocs } from 'firebase/firestore';
 import { UserData } from '../types';
 
 interface AdminUser extends UserData {
@@ -29,6 +29,9 @@ export default function AdminPage({ onBack, onViewMissions }: AdminPageProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
+  const [selectedUserForChat, setSelectedUserForChat] = useState<AdminUser | null>(null);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatInput, setChatInput] = useState('');
 
   useEffect(() => {
     if (!auth.currentUser) {
@@ -68,21 +71,39 @@ export default function AdminPage({ onBack, onViewMissions }: AdminPageProps) {
     };
   }, []);
 
-  const sendMessage = async (userId: string) => {
-    const message = prompt('Envoyer un message à l\'utilisateur (le message apparaîtra dans sa boîte de réception) :');
-    if (message) {
-      try {
-        await addDoc(collection(db, 'messages'), {
-          text: message,
-          sender: 'admin',
-          userId: userId, // UID of the recipient
-          timestamp: serverTimestamp()
-        });
-        alert('Message envoyé avec succès !');
-      } catch (error) {
-        console.error('Erreur lors de l\'envoie du message:', error);
-        alert('Échec de l\'envoi du message.');
-      }
+  useEffect(() => {
+    if (!selectedUserForChat) return;
+
+    const q = query(
+      collection(db, 'messages'),
+      where('userId', '==', selectedUserForChat.id),
+      orderBy('timestamp', 'asc')
+    );
+
+    const unsubscribeMessages = onSnapshot(q, (snapshot) => {
+      const msgs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setChatMessages(msgs);
+    });
+
+    return () => unsubscribeMessages();
+  }, [selectedUserForChat]);
+
+  const handleSendAdminMessage = async () => {
+    if (!chatInput.trim() || !selectedUserForChat) return;
+    const text = chatInput;
+    setChatInput('');
+    try {
+      await addDoc(collection(db, 'messages'), {
+        text,
+        sender: 'admin',
+        userId: selectedUserForChat.id,
+        timestamp: serverTimestamp()
+      });
+    } catch (error) {
+      console.error('Error sending message:', error);
     }
   };
 
@@ -150,7 +171,42 @@ export default function AdminPage({ onBack, onViewMissions }: AdminPageProps) {
       </header>
 
       <main className="flex-1 p-4">
-        {loading ? (
+        {selectedUserForChat ? (
+          <div className="flex flex-col h-[70vh] bg-white dark:bg-gray-900 rounded-[32px] overflow-hidden border border-gray-100 dark:border-gray-800 shadow-xl">
+             <div className="bg-brand-orange p-4 flex items-center gap-4 text-white">
+                <button onClick={() => setSelectedUserForChat(null)} className="p-2 bg-white/20 rounded-full">
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <div>
+                   <h2 className="text-sm font-black uppercase">Chat: {selectedUserForChat.details?.firstName || 'Utilisateur'}</h2>
+                   <p className="text-[8px] font-bold uppercase opacity-70">En direct avec l'admin</p>
+                </div>
+             </div>
+             
+             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-950">
+                {chatMessages.map((msg) => (
+                  <div key={msg.id} className={`flex ${msg.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[80%] p-3 rounded-2xl text-xs font-medium shadow-sm ${msg.sender === 'admin' ? 'bg-brand-orange text-white rounded-tr-none' : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-tl-none'}`}>
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
+             </div>
+
+             <div className="p-4 flex gap-2 border-t border-gray-100 dark:border-gray-800">
+               <input 
+                 value={chatInput}
+                 onChange={(e) => setChatInput(e.target.value)}
+                 onKeyDown={(e) => e.key === 'Enter' && handleSendAdminMessage()}
+                 placeholder="Message..."
+                 className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-xl px-4 text-sm outline-none dark:text-white"
+               />
+               <button onClick={handleSendAdminMessage} className="bg-brand-orange text-white p-3 rounded-xl">
+                 <Send className="w-5 h-5" />
+               </button>
+             </div>
+          </div>
+        ) : loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-8 h-8 border-4 border-brand-orange/20 border-t-brand-orange rounded-full animate-spin" />
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Chargement...</p>
@@ -170,9 +226,9 @@ export default function AdminPage({ onBack, onViewMissions }: AdminPageProps) {
         ) : (
           activeTab === 'users' ? (
           <div className="grid gap-6">
-            {filteredUsers.map((user) => (
+            {filteredUsers.map((user, idx) => (
               <motion.div
-                key={user.id}
+                key={`${user.id}-${idx}`}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-white dark:bg-gray-900 p-6 rounded-[32px] shadow-sm border border-gray-100 dark:border-gray-800 relative group"
@@ -214,13 +270,33 @@ export default function AdminPage({ onBack, onViewMissions }: AdminPageProps) {
                 </div>
 
                 {/* All detailed info from form */}
-                <div className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-800 p-4 rounded-2xl mb-6 border border-gray-100 dark:border-gray-700">
+                <div className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-800 p-4 rounded-2xl mb-4 border border-gray-100 dark:border-gray-800">
+                   <div className="col-span-2 flex items-center justify-between mb-1 border-b border-gray-200 dark:border-gray-700 pb-2">
+                      <div className="flex items-center gap-2">
+                        <Activity className="w-3 h-3 text-brand-orange" />
+                        <p className="text-[8px] font-black uppercase text-gray-400">Activités & Détails</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                         <Clock className="w-2.5 h-2.5 text-gray-400" />
+                         <span className="text-[8px] font-bold text-gray-400">
+                           {logins.filter(l => l.uid === user.id).length} Connexion(s)
+                         </span>
+                      </div>
+                   </div>
                    {Object.entries(user.details || {}).map(([key, value]) => (
                      <div key={key}>
                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{key}</p>
                        <p className="text-xs font-bold text-gray-700 dark:text-gray-200 truncate">{value || 'N/A'}</p>
                      </div>
                    ))}
+                   {/* Login history summary */}
+                   <div className="col-span-2 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                      <p className="text-[7px] font-black uppercase text-gray-300 mb-1">Dernière activité</p>
+                      <div className="flex items-center justify-between text-[9px] font-medium text-gray-500">
+                         <span>{logins.find(l => l.uid === user.id)?.timestamp?.toDate().toLocaleString() || 'Inconnue'}</span>
+                         <span className="text-brand-orange">● En ligne</span>
+                      </div>
+                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -232,11 +308,11 @@ export default function AdminPage({ onBack, onViewMissions }: AdminPageProps) {
                     Voir missions ({user.missions?.length || 0})
                   </button>
                   <button 
-                    onClick={() => sendMessage(user.id)}
+                    onClick={() => setSelectedUserForChat(user)}
                     className="flex flex-col items-center justify-center gap-1.5 py-4 rounded-2xl bg-brand-orange text-white font-black text-[10px] uppercase tracking-widest shadow-lg shadow-brand-orange/20 hover:bg-brand-dark-orange transition-all active:scale-[0.98]"
                   >
-                    <Mail className="w-4 h-4" />
-                    Envoyer Message
+                    <MessageCircle className="w-4 h-4" />
+                    Conversation (Chat)
                   </button>
                 </div>
               </motion.div>
@@ -244,9 +320,9 @@ export default function AdminPage({ onBack, onViewMissions }: AdminPageProps) {
           </div>
         ) : (
           <div className="space-y-3 pb-20">
-             {filteredLogins.map((login) => (
+             {filteredLogins.map((login, idx) => (
                <motion.div
-                 key={login.id}
+                 key={`${login.id}-${idx}`}
                  initial={{ opacity: 0, x: -10 }}
                  animate={{ opacity: 1, x: 0 }}
                  className="bg-white dark:bg-gray-900 p-4 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-800 flex items-center gap-4 text-left"
